@@ -89,46 +89,40 @@ void SdMmc::dump_config() {
 void SdMmc::setup() {
   ESP_LOGI(TAG, "Initializing SD MMC for ESP32-P4");
   
-  // Configuration du contrôle d'alimentation pour ESP32-P4
+  // Configuration du contrôle d'alimentation avec séquence d'initialisation
   if (this->power_ctrl_pin_ != nullptr) {
     ESP_LOGI(TAG, "Setting up power control pin");
     this->power_ctrl_pin_->setup();
-    this->power_ctrl_pin_->digital_write(true);  // Activer l'alimentation
-    vTaskDelay(pdMS_TO_TICKS(10));  // Attendre stabilisation
+    // Séquence de reset complet
+    this->power_ctrl_pin_->digital_write(false);
+    vTaskDelay(pdMS_TO_TICKS(500));  // Attendre décharge complète
+    this->power_ctrl_pin_->digital_write(true);
+    vTaskDelay(pdMS_TO_TICKS(500));  // Attendre stabilisation longue
+  } else {
+    // Si pas de contrôle power, attendre quand même la stabilisation
+    vTaskDelay(pdMS_TO_TICKS(200));
   }
   
-  // Configuration optimisée pour ESP32-P4
+  // Configuration conservative pour ESP32-P4
   esp_vfs_fat_sdmmc_mount_config_t mount_config = {
     .format_if_mount_failed = false,
-    .max_files = 16,
-    .allocation_unit_size = 256 * 1024  // 256KB pour optimiser les performances
+    .max_files = 8,  // Réduit pour éviter les problèmes de mémoire
+    .allocation_unit_size = 0  // Laisser auto pour éviter les problèmes
   };
   
-  // Configuration de l'hôte SDMMC pour ESP32-P4
+  // Configuration de l'hôte SDMMC conservative
   sdmmc_host_t host = SDMMC_HOST_DEFAULT();
   
-#if CONFIG_IDF_TARGET_ESP32P4
-  // ESP32-P4 peut supporter des fréquences plus élevées
-  host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;  // 50MHz par défaut
-  // Possibilité d'aller plus haut selon les spécifications de la carte
-  // host.max_freq_khz = 80000;  // 80MHz si supporté
-#else
-  host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;  // 50MHz
-#endif
-
-  // Configuration des flags - utiliser les flags par défaut d'abord
-  // Puis activer DDR seulement en mode 4 bits ou plus
-  if (!this->mode_1bit_) {
-    host.flags |= SDMMC_HOST_FLAG_DDR;
-  } else {
-    host.flags &= ~SDMMC_HOST_FLAG_DDR;
-  }
+  // Fréquence réduite pour améliorer la stabilité
+  host.max_freq_khz = 20000;  // 20MHz au lieu de 50MHz
+  
+  // Désactiver DDR pour commencer - peut causer des problèmes sur P4
+  host.flags &= ~SDMMC_HOST_FLAG_DDR;
   
   sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
   slot_config.width = this->mode_1bit_ ? 1 : 4;
   
   // Configuration des pins pour ESP32-P4
-  // ESP32-P4 utilise toujours la matrice GPIO
   slot_config.clk = static_cast<gpio_num_t>(this->clk_pin_);
   slot_config.cmd = static_cast<gpio_num_t>(this->cmd_pin_);
   slot_config.d0 = static_cast<gpio_num_t>(this->data0_pin_);
@@ -138,21 +132,47 @@ void SdMmc::setup() {
     slot_config.d3 = static_cast<gpio_num_t>(this->data3_pin_);
   }
   
-  // Enable internal pullups - important pour la stabilité
+  // Configuration conservative des pullups
   slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
   
-  // Tentatives de montage avec logique de retry optimisée
+  // Force drive strength pour ESP32-P4 si disponible
+#ifdef SDMMC_SLOT_FLAG_HOST_DEFAULT
+  slot_config.flags |= SDMMC_SLOT_FLAG_HOST_DEFAULT;
+#endif
+  
+  // Premier essai en mode 1-bit pour tester la connectivité
+  ESP_LOGI(TAG, "Testing SD card connectivity in 1-bit mode first...");
+  sdmmc_slot_config_t test_slot_config = slot_config;
+  test_slot_config.width = 1;
+  
   esp_err_t ret = ESP_FAIL;
-  for (int attempt = 1; attempt <= 5; attempt++) {  // Plus de tentatives pour ESP32-P4
-    ESP_LOGI(TAG, "Mounting SD Card (attempt %d/5)...", attempt);
+  sdmmc_card_t *test_card = nullptr;
+  
+  // Test initial en 1-bit
+  ret = esp_vfs_fat_sdmmc_mount(MOUNT_POINT.c_str(), &host, &test_slot_config, &mount_config, &test_card);
+  if (ret == ESP_OK) {
+    ESP_LOGI(TAG, "1-bit test successful, unmounting for proper setup...");
+    esp_vfs_fat_sdcard_unmount(MOUNT_POINT.c_str(), test_card);
+    vTaskDelay(pdMS_TO_TICKS(100));
+  } else {
+    ESP_LOGW(TAG, "1-bit test failed: %s (0x%x)", esp_err_to_name(ret), ret);
+  }
+  
+  // Tentatives de montage avec logique de retry améliorée
+  ret = ESP_FAIL;
+  for (int attempt = 1; attempt <= 3; attempt++) {  // Réduire à 3 tentatives
+    ESP_LOGI(TAG, "Mounting SD Card (attempt %d/3)...", attempt);
     
     if (attempt > 1) {
-      // Reset power si disponible pour les tentatives suivantes
+      // Reset complet entre les tentatives
       if (this->power_ctrl_pin_ != nullptr) {
+        ESP_LOGI(TAG, "Power cycling SD card...");
         this->power_ctrl_pin_->digital_write(false);
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(500));
         this->power_ctrl_pin_->digital_write(true);
-        vTaskDelay(pdMS_TO_TICKS(200));
+        vTaskDelay(pdMS_TO_TICKS(500));
+      } else {
+        vTaskDelay(pdMS_TO_TICKS(1000));
       }
     }
     
@@ -162,8 +182,19 @@ void SdMmc::setup() {
       break;
     }
     
-    ESP_LOGW(TAG, "Mount attempt %d failed with error: %s", attempt, esp_err_to_name(ret));
-    vTaskDelay(pdMS_TO_TICKS(200));  // Pause plus longue entre tentatives
+    ESP_LOGW(TAG, "Mount attempt %d failed with error: %s (0x%x)", attempt, esp_err_to_name(ret), ret);
+    
+    // Si c'est un timeout et pas le dernier essai, essayer en mode 1-bit
+    if (ret == ESP_ERR_TIMEOUT && attempt < 3) {
+      ESP_LOGI(TAG, "Trying fallback to 1-bit mode...");
+      test_slot_config.width = 1;
+      ret = esp_vfs_fat_sdmmc_mount(MOUNT_POINT.c_str(), &host, &test_slot_config, &mount_config, &this->card_);
+      if (ret == ESP_OK) {
+        ESP_LOGI(TAG, "1-bit mode successful! Using 1-bit configuration.");
+        this->mode_1bit_ = true;
+        break;
+      }
+    }
   }
   
   if (ret != ESP_OK) {
