@@ -55,7 +55,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional(CONF_DATA2_PIN): pins.internal_gpio_pin_number,
         cv.Optional(CONF_DATA3_PIN): pins.internal_gpio_pin_number,
         cv.Optional(CONF_MODE_1BIT, default=False): cv.boolean,
-        cv.Optional(CONF_SLOT, default=0): cv.int_range(min=0, max=1),  # Ajout du slot
+        cv.Optional(CONF_SLOT, default=0): cv.int_range(min=0, max=6),  # Ajout du slot
         cv.Optional(CONF_POWER_CTRL_PIN): pins.gpio_pin_schema({
             CONF_OUTPUT: True,
             CONF_PULLUP: False,
