@@ -116,10 +116,8 @@ void SdMmc::setup() {
   host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;  // 50MHz
 #endif
 
-  // Configuration des flags pour ESP32-P4
-  host.flags = SDMMC_HOST_FLAG_8BIT;  // ESP32-P4 supporte 8-bit par défaut
-  
-  // Activer DDR seulement en mode 4 bits ou plus
+  // Configuration des flags - utiliser les flags par défaut d'abord
+  // Puis activer DDR seulement en mode 4 bits ou plus
   if (!this->mode_1bit_) {
     host.flags |= SDMMC_HOST_FLAG_DDR;
   } else {
@@ -142,12 +140,6 @@ void SdMmc::setup() {
   
   // Enable internal pullups - important pour la stabilité
   slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
-  
-  // Configuration spécifique ESP32-P4 pour la stabilité
-#if CONFIG_IDF_TARGET_ESP32P4
-  // Ajuster la force des pulls selon les besoins
-  slot_config.flags |= SDMMC_SLOT_FLAG_EXTERNAL_PULLUP;
-#endif
   
   // Tentatives de montage avec logique de retry optimisée
   esp_err_t ret = ESP_FAIL;
