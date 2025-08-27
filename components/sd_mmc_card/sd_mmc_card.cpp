@@ -14,7 +14,13 @@
 #include "sdmmc_cmd.h"
 #include "driver/sdmmc_host.h"
 #include "driver/sdmmc_types.h"
+
+// Pour ESP32-P4, utiliser le contrôleur LDO on-chip si disponible
+#if CONFIG_IDF_TARGET_ESP32P4
 #include "sd_pwr_ctrl_by_on_chip_ldo.h"
+#elif CONFIG_IDF_TARGET_ESP32S3
+#include "sd_pwr_ctrl_by_on_chip_ldo.h"
+#endif
 
 int constexpr SD_OCR_SDHC_CAP = (1 << 30);  // value defined in esp-idf/components/sdmmc/include/sd_protocol_defs.h
 #endif
@@ -38,7 +44,7 @@ FileSizeSensor::FileSizeSensor(sensor::Sensor *sensor, std::string const &path) 
 void SdMmc::loop() {}
 
 void SdMmc::dump_config() {
-  ESP_LOGCONFIG(TAG, "SD MMC Component");
+  ESP_LOGCONFIG(TAG, "SD MMC Component (ESP32-P4)");
   ESP_LOGCONFIG(TAG, "  Mode 1 bit: %s", TRUEFALSE(this->mode_1bit_));
   ESP_LOGCONFIG(TAG, "  Slot: %d", this->slot_); 
   ESP_LOGCONFIG(TAG, "  CLK Pin: %d", this->clk_pin_);
@@ -78,29 +84,42 @@ void SdMmc::dump_config() {
     return;
   }
 }
-#ifdef USE_ESP_IDF
 
+#ifdef USE_ESP_IDF
 void SdMmc::setup() {
-  // Power control
+  ESP_LOGI(TAG, "Initializing SD MMC for ESP32-P4");
+  
+  // Configuration du contrôle d'alimentation pour ESP32-P4
   if (this->power_ctrl_pin_ != nullptr) {
+    ESP_LOGI(TAG, "Setting up power control pin");
     this->power_ctrl_pin_->setup();
+    this->power_ctrl_pin_->digital_write(true);  // Activer l'alimentation
+    vTaskDelay(pdMS_TO_TICKS(10));  // Attendre stabilisation
   }
   
-  // Configuration optimale
+  // Configuration optimisée pour ESP32-P4
   esp_vfs_fat_sdmmc_mount_config_t mount_config = {
     .format_if_mount_failed = false,
     .max_files = 16,
-    .allocation_unit_size = 256 * 1024  // 64KB optimise l'écriture des fichiers
+    .allocation_unit_size = 256 * 1024  // 256KB pour optimiser les performances
   };
+  
+  // Configuration de l'hôte SDMMC pour ESP32-P4
   sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+  
+#if CONFIG_IDF_TARGET_ESP32P4
+  // ESP32-P4 peut supporter des fréquences plus élevées
+  host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;  // 50MHz par défaut
+  // Possibilité d'aller plus haut selon les spécifications de la carte
+  // host.max_freq_khz = 80000;  // 80MHz si supporté
+#else
   host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;  // 50MHz
-  //host.max_freq_khz = 60000; // ou 50000
+#endif
 
+  // Configuration des flags pour ESP32-P4
+  host.flags = SDMMC_HOST_FLAG_8BIT;  // ESP32-P4 supporte 8-bit par défaut
   
-  // Dans les versions récentes d'ESP-IDF, DMA est généralement activé par défaut
-  // ou configuré différemment, donc on n'ajoute pas SDMMC_HOST_FLAG_DMA
-  
-  // Activer DDR seulement en mode 4 bits
+  // Activer DDR seulement en mode 4 bits ou plus
   if (!this->mode_1bit_) {
     host.flags |= SDMMC_HOST_FLAG_DDR;
   } else {
@@ -110,8 +129,8 @@ void SdMmc::setup() {
   sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
   slot_config.width = this->mode_1bit_ ? 1 : 4;
   
-  // Configuration des pins
-  #ifdef SOC_SDMMC_USE_GPIO_MATRIX
+  // Configuration des pins pour ESP32-P4
+  // ESP32-P4 utilise toujours la matrice GPIO
   slot_config.clk = static_cast<gpio_num_t>(this->clk_pin_);
   slot_config.cmd = static_cast<gpio_num_t>(this->cmd_pin_);
   slot_config.d0 = static_cast<gpio_num_t>(this->data0_pin_);
@@ -120,38 +139,67 @@ void SdMmc::setup() {
     slot_config.d2 = static_cast<gpio_num_t>(this->data2_pin_);
     slot_config.d3 = static_cast<gpio_num_t>(this->data3_pin_);
   }
-  #endif
-  // Enable internal pullups
+  
+  // Enable internal pullups - important pour la stabilité
   slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
   
-  // Try to mount with optimized retry logic
+  // Configuration spécifique ESP32-P4 pour la stabilité
+#if CONFIG_IDF_TARGET_ESP32P4
+  // Ajuster la force des pulls selon les besoins
+  slot_config.flags |= SDMMC_SLOT_FLAG_EXTERNAL_PULLUP;
+#endif
+  
+  // Tentatives de montage avec logique de retry optimisée
   esp_err_t ret = ESP_FAIL;
-  for (int attempt = 1; attempt <= 3; attempt++) {
-    ESP_LOGI(TAG, "Mounting SD Card (attempt %d/3)...", attempt);
+  for (int attempt = 1; attempt <= 5; attempt++) {  // Plus de tentatives pour ESP32-P4
+    ESP_LOGI(TAG, "Mounting SD Card (attempt %d/5)...", attempt);
+    
+    if (attempt > 1) {
+      // Reset power si disponible pour les tentatives suivantes
+      if (this->power_ctrl_pin_ != nullptr) {
+        this->power_ctrl_pin_->digital_write(false);
+        vTaskDelay(pdMS_TO_TICKS(100));
+        this->power_ctrl_pin_->digital_write(true);
+        vTaskDelay(pdMS_TO_TICKS(200));
+      }
+    }
+    
     ret = esp_vfs_fat_sdmmc_mount(MOUNT_POINT.c_str(), &host, &slot_config, &mount_config, &this->card_);
     if (ret == ESP_OK) {
-      ESP_LOGI(TAG, "SD Card mounted successfully!");
+      ESP_LOGI(TAG, "SD Card mounted successfully on attempt %d!", attempt);
       break;
     }
-    vTaskDelay(pdMS_TO_TICKS(100));  // Pause entre tentatives
+    
+    ESP_LOGW(TAG, "Mount attempt %d failed with error: %s", attempt, esp_err_to_name(ret));
+    vTaskDelay(pdMS_TO_TICKS(200));  // Pause plus longue entre tentatives
   }
+  
   if (ret != ESP_OK) {
     if (ret == ESP_FAIL) {
       this->init_error_ = ErrorCode::ERR_MOUNT;
       ESP_LOGE(TAG, "Failed to mount filesystem on SD card");
-    } else {
+    } else if (ret == ESP_ERR_NOT_FOUND) {
       this->init_error_ = ErrorCode::ERR_NO_CARD;
       ESP_LOGE(TAG, "No SD card detected");
+    } else {
+      this->init_error_ = ErrorCode::ERR_MOUNT;
+      ESP_LOGE(TAG, "SD card mount failed with error: %s", esp_err_to_name(ret));
     }
     mark_failed();
     return;
   }
-  // Diagnostic de la carte
+  
+  // Diagnostic détaillé de la carte
   ESP_LOGI(TAG, "SD Card Info:");
   ESP_LOGI(TAG, "  Name: %s", this->card_->cid.name);
   ESP_LOGI(TAG, "  Type: %s", sd_card_type().c_str());
-  ESP_LOGI(TAG, "  Speed: %d kHz (max: %d kHz)", this->card_->max_freq_khz, SDMMC_FREQ_HIGHSPEED);
+  ESP_LOGI(TAG, "  Speed: %d kHz (max: %d kHz)", this->card_->real_freq_khz, this->card_->max_freq_khz);
   ESP_LOGI(TAG, "  Size: %llu MB", ((uint64_t)this->card_->csd.capacity * this->card_->csd.sector_size) / (1024 * 1024));
+  ESP_LOGI(TAG, "  DDR Mode: %s", this->card_->is_ddr ? "Yes" : "No");
+  
+#if CONFIG_IDF_TARGET_ESP32P4
+  ESP_LOGI(TAG, "  Platform: ESP32-P4");
+#endif
   
   #ifdef USE_TEXT_SENSOR
   if (this->sd_card_type_text_sensor_ != nullptr)
@@ -159,6 +207,7 @@ void SdMmc::setup() {
   #endif
   update_sensors();
 }
+
 void SdMmc::write_file_chunked(const char *path, const uint8_t *buffer, size_t len, size_t chunk_size) {
   std::string absolut_path = build_path(path);
   FILE *file = NULL;
@@ -169,18 +218,26 @@ void SdMmc::write_file_chunked(const char *path, const uint8_t *buffer, size_t l
   }
 
   size_t written = 0;
+  size_t chunks_written = 0;
   while (written < len) {
     size_t to_write = std::min(chunk_size, len - written);
-    bool ok = fwrite(buffer + written, 1, to_write, file);
-    if (!ok) {
-      ESP_LOGE(TAG, "Failed to write chunk to file");
+    size_t result = fwrite(buffer + written, 1, to_write, file);
+    if (result != to_write) {
+      ESP_LOGE(TAG, "Failed to write chunk to file (wrote %zu, expected %zu)", result, to_write);
       break;
     }
     written += to_write;
+    chunks_written++;
+    
+    // Reset WDT périodiquement pour ESP32-P4
+    if (chunks_written % 64 == 0) {
+      esp_task_wdt_reset();
+    }
   }
   fclose(file);
   this->update_sensors();
 }
+
 #else
 void SdMmc::write_file_chunked(const char *path, const uint8_t *buffer, size_t len, size_t chunk_size) {
   ESP_LOGV(TAG, "Writing chunked to file: %s", path);
@@ -193,6 +250,7 @@ void SdMmc::write_file_chunked(const char *path, const uint8_t *buffer, size_t l
 }
 #endif
 
+// Reste du code identique...
 std::vector<std::string> SdMmc::list_directory(const char *path, uint8_t depth) {
   std::vector<std::string> list;
   std::vector<FileInfo> infos = list_directory_file_info(path, depth);
@@ -356,15 +414,15 @@ bool SdMmc::delete_file(const char *path) {
   return true;
 }
 
-// Lecture complète d'un fichier
+// Lecture complète d'un fichier avec optimisations ESP32-P4
 std::vector<uint8_t> SdMmc::read_file(const char *path) {
   ESP_LOGV(TAG, "Read File: %s", path);
 
   // Vérifier d'abord la taille du fichier
   size_t file_size = this->file_size(path);
   
-  // Limite de sécurité, par exemple 5MB
-  constexpr size_t MAX_SAFE_SIZE = 5 * 1024 * 1024;
+  // Limite de sécurité augmentée pour ESP32-P4 (plus de RAM)
+  constexpr size_t MAX_SAFE_SIZE = 8 * 1024 * 1024;  // 8MB au lieu de 5MB
   
   if (file_size > MAX_SAFE_SIZE) {
     ESP_LOGE(TAG, "File too large for direct reading: %zu bytes (max: %zu). Use read_file_stream instead.", 
@@ -391,9 +449,7 @@ std::vector<uint8_t> SdMmc::read_file(const char *path) {
   return res;
 }
 
-
-
-// Lecture en streaming par chunks avec reset du WDT
+// Lecture en streaming par chunks avec reset du WDT optimisé pour ESP32-P4
 void SdMmc::read_file_stream(const char *path, size_t offset, size_t chunk_size,
                              std::function<void(const uint8_t*, size_t)> callback) {
   std::string absolut_path = build_path(path);
@@ -418,7 +474,8 @@ void SdMmc::read_file_stream(const char *path, size_t offset, size_t chunk_size,
     callback(buffer.data(), read);
     bytes_since_reset += read;
 
-    if (bytes_since_reset >= 64 * 1024) {
+    // Reset WDT moins fréquemment sur ESP32-P4 (plus performant)
+    if (bytes_since_reset >= 128 * 1024) {  // 128KB au lieu de 64KB
       esp_task_wdt_reset();
       bytes_since_reset = 0;
     }
@@ -429,16 +486,13 @@ void SdMmc::read_file_stream(const char *path, size_t offset, size_t chunk_size,
   }
 }
 
-
 #endif
+
+// Méthodes de compatibilité (identiques)
 size_t SdMmc::file_size(std::string const &path) { return this->file_size(path.c_str()); }
-
 bool SdMmc::is_directory(std::string const &path) { return this->is_directory(path.c_str()); }
-
 bool SdMmc::delete_file(std::string const &path) { return this->delete_file(path.c_str()); }
-
 std::vector<uint8_t> SdMmc::read_file(std::string const &path) { return this->read_file(path.c_str()); }
-
 std::vector<uint8_t> SdMmc::read_file_chunked(std::string const &path, size_t offset, size_t chunk_size) {
   return this->read_file_chunked(path.c_str(), offset, chunk_size);
 }
@@ -450,19 +504,12 @@ void SdMmc::add_file_size_sensor(sensor::Sensor *sensor, std::string const &path
 #endif
 
 void SdMmc::set_clk_pin(uint8_t pin) { this->clk_pin_ = pin; }
-
 void SdMmc::set_cmd_pin(uint8_t pin) { this->cmd_pin_ = pin; }
-
 void SdMmc::set_data0_pin(uint8_t pin) { this->data0_pin_ = pin; }
-
 void SdMmc::set_data1_pin(uint8_t pin) { this->data1_pin_ = pin; }
-
 void SdMmc::set_data2_pin(uint8_t pin) { this->data2_pin_ = pin; }
-
 void SdMmc::set_data3_pin(uint8_t pin) { this->data3_pin_ = pin; }
-
 void SdMmc::set_mode_1bit(bool b) { this->mode_1bit_ = b; }
-
 void SdMmc::set_power_ctrl_pin(GPIOPin *pin) { this->power_ctrl_pin_ = pin; }
 
 std::string SdMmc::error_code_to_string(SdMmc::ErrorCode code) {
