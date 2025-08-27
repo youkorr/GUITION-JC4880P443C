@@ -1,0 +1,4383 @@
+substitutions:
+
+  name: P4mini
+  friendly_name: P4mini
+  #audio_pop_delay: 1s
+
+  loading_illustration_file: https://github.com/esphome/wake-word-voice-assistants/raw/main/casita/loading_320_240.png
+  idle_illustration_file: https://github.com/esphome/wake-word-voice-assistants/raw/main/casita/idle_320_240.png
+  listening_illustration_file: https://raw.githubusercontent.com/youkorr/speaker-box/refs/heads/main/images/listening.png
+  thinking_illustration_file: https://raw.githubusercontent.com/youkorr/speaker-box/refs/heads/main/images/thinking.png
+  replying_illustration_file: https://raw.githubusercontent.com/youkorr/speaker-box/refs/heads/main/images/replying.png
+  error_illustration_file: https://github.com/esphome/wake-word-voice-assistants/raw/main/casita/error_320_240.png
+  timer_finished_illustration_file: https://raw.githubusercontent.com/youkorr/speaker-box/refs/heads/main/images/timer.png
+
+  #camera
+   
+  frigate1: rtsp://Tapoone:Tapoone132@192.168.1.56:554/stream1 
+
+  frigate: "http://192.168.1.38:8123/local/llmvision/frigate1.jpg"
+
+  #wallpaper: "http://192.168.1.38:8123/local/llmvision/abstrac.png"
+  #mediaplayer
+  media_player_entity: "media_player.p4mini_esp32_p4_media_player"
+
+  
+    # URLs des stations de radio"
+  radio_fun_url: " https://icecast.funradio.fr/fun-1-44-128?listen=webGJmqBU59boQ7rZDjrGO5e4"
+  radio_skyrock_url: "http://icecast.skyrock.net/s/natio_mp3_128k"
+  radio_sud_url: "https://live.sudradio.fr/sudradio-mp3-128"
+  radio_rtl_url: "https://icecast.rtl.fr/rtl2-1-44-128?listen=webGJmqBU59boQ7rZDjrGO5e4"
+  radio_Mouv_Soul_url: "https://icecast.radiofrance.fr/mouvrnb-hifi.aac"
+  radio_nrj_url: "https://streaming.nrjaudio.fm/oumvmk8fnozc"
+
+
+  power_icon:        "\U0000e909"
+  play_icon:         "\U0000e90a"
+  pause_icon:        "\U0000e90b"
+  back_step_icon:    "\U0000e90c"
+  forward_step_icon: "\U0000e90d"
+  volume_off_icon:   "\U0000e90e"
+  volume_on_icon:    "\U0000e90f"
+  volume_minus_icon: "\U0000e910"
+  volume_plus_icon:  "\U0000e911"
+  repeat_all_icon:   "\U0000e912"
+  repeat_off_icon:   "\U0000e913"
+  repeat_one_icon:   "\U0000e914"
+  ha:                "\U0000e90b" # home assistant
+  humidity:          "\U0000e912" # humidity
+  temperature:       "\U0000e915" # temperature
+  tvoc:              "\U0000e914" # air quality
+  co2:               "\U0000e913" # co2
+  door:              "\U000F081A"
+  garage:            "\U000F06D9"
+  shutter:           "\U000F1A8B"
+  setting:           "\U000F08D6"
+  alarm:             "\U000F0BC4"
+  exit_icon:         "\U0000e902"
+  
+
+  settings_icon:                 "\U0000e903"
+  info_icon:                     "\U0000e904"
+  devices_icon:                  "\U0000e905"
+  home_icon:                     "\U0000e906"
+  ceiling_icon:                  "\U0000e907"
+  lightbulb_icon:                "\U0000e908"
+  spotlight_group_icon:          "\U0000e915"
+  desk_lamp_icon:                "\U0000e916"
+  pendant_lamp_icon:             "\U0000e917" 
+  ceiling_lamp_icon:             "\U0000e918"
+  ceiling_lamp_variant_icon:     "\U0000e921"
+  night_lamp_icon:               "\U0000e919"
+  swipe_icon:                    "\U0000e91a"
+  brightness_icon:               "\U0000e900"
+ 
+
+  voice_assist_idle_phase_id: "1"
+  voice_assist_listening_phase_id: "2"
+  voice_assist_thinking_phase_id: "3"
+  voice_assist_replying_phase_id: "4"
+  voice_assist_not_ready_phase_id: "10"
+  voice_assist_error_phase_id: "11"
+  voice_assist_muted_phase_id: "12"
+  voice_assist_timer_finished_phase_id: "20"
+
+  loading_illustration_background_color: "000000"
+  idle_illustration_background_color: "000000"
+  listening_illustration_background_color: "FFFFFF"
+  thinking_illustration_background_color: "FFFFFF"
+  replying_illustration_background_color: "FFFFFF"
+  error_illustration_background_color: "000000"
+  timer_illustration_background_color: "FFFFFF"
+  
+  alarm_panel_entity:   "alarm_control_panel.alarmo" #"alarm_control_panel.security"
+  pin_code:             "1169"
+
+  shield_home_icon:      "\U000F068A" # home
+  shield_away_icon:      "\U000F099D" # away
+  shield_night_icon:     "\U000F1828" # night
+  shield_vacation_icon:  "\U000F06BB" # vacation
+  shield_disarm_icon:    "\U000F099E" # disarmed
+  shield_arming_icon:    "\U000F0498" # arming
+  micro_sd:              "\U000F07DC"
+
+
+
+
+  allowed_characters: " !#%'()+,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWYZ[]_abcdefghijklmnopqrstuvwxyz{|}°²³µ¿ÁÂÄÅÉÖÚßàáâãäåæçèéêëìíîðñòóôõöøùúûüýþāăąćčďĐđēėęěğĮįıļľŁłńňőřśšťũūůűųźŻżŽžơưșțΆΈΌΐΑΒΓΔΕΖΗΘΚΜΝΠΡΣΤΥΦάέήίαβγδεζηθικλμνξοπρςστυφχψωϊόύώАБВГДЕЖЗИКЛМНОПРСТУХЦЧШЪЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяёђєіїјљњћאבגדהוזחטיכלםמןנסעפץצקרשת،ءآأإئابةتجحخدذرزسشصضطظعغفقكلمنهوىيٹپچڈکگںھہیےংকচতধনফবযরলশষস়ািু্చయలిెొ్ംഅആഇഈഉഎഓകഗങചജഞടഡണതദധനപഫബഭമയരറലളവശസഹാിീുൂെേൈ്ൺൻർൽൾაბგდევზთილმნოპრსტუფქყშჩცძჭხạảấầẩậắặẹẽếềểệỉịọỏốồổỗộớờởợụủứừửữựỳ—、一上不个中为主乾了些亮人任低佔何作供依侧係個側偵充光入全关冇冷几切到制前動區卧厅厨及口另右吊后吗启吸呀咗哪唔問啟嗎嘅嘛器圍在场執場外多大始安定客室家密寵对將小少左已帘常幫幾库度庫廊廚廳开式後恆感態成我戲戶户房所扇手打执把拔换掉控插摄整斯新明是景暗更最會有未本模機檯櫃欄次正氏水沒没洗活派温測源溫漏潮激濕灯為無煙照熱燈燥物狀玄现現瓦用發的盞目着睡私空窗立笛管節簾籬紅線红罐置聚聲脚腦腳臥色节著行衣解設調請謝警设调走路車车运連遊運過道邊部都量鎖锁門閂閉開關门闭除隱離電震霧面音頂題顏颜風风食餅餵가간감갔강개거게겨결경고공과관그금급기길깥꺼껐꼽나난내네놀누는능니다닫담대더데도동됐되된됨둡드든등디때떤뜨라래러렇렌려로료른를리림링마많명몇모무문물뭐바밝방배변보부불블빨뽑사산상색서설성세센션소쇼수스습시신실싱아안않알았애야어얼업없었에여연열옆오온완외왼요운움워원위으은을음의이인일임입있작잠장재전절정제져조족종주줄중줘지직진짐쪽차창천최추출충치침커컴켜켰쿠크키탁탄태탬터텔통트튼티파팬퍼폰표퓨플핑한함해했행혀현화활후휴힘，？"
+  
+  font_glyphsets: "GF_Latin_Core"
+  # for Greek use "Noto Sans" for other languages use a compatible font family
+  font_family: Figtree
+
+esphome:
+  name: p4mini
+  friendly_name: P4mini
+  on_boot:
+    priority: 850
+    then: 
+      - logger.log: "Démarrage - Attente du montage de la carte SD..."
+      - delay: 5s
+      - logger.log: "Délai écoulé - Allumage du rétroéclairage"
+      - light.turn_on: backlight
+
+esp32:
+  board: esp32-p4-evboard
+  cpu_frequency: 360MHz
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+    version: 5.4.2
+    platform_version: 54.03.21
+    advanced:
+      enable_idf_experimental_features: yes
+
+
+
+
+
+
+http_request:
+  #verify_ssl: false
+
+
+online_image:
+  - url: "${frigate}"
+    format: JPG
+    id: cctv_img
+    byte_order: little_endian    
+    type: RGB565
+    resize: 800x480 #450x300 #1000x700
+    on_download_finished:
+      - lvgl.image.update:
+          id: cctv_img_lvgl
+          src: cctv_img        
+
+
+
+logger:
+  hardware_uart: USB_SERIAL_JTAG
+  level: DEBUG
+  logs:
+    lvgl: INFO
+    display: INFO
+
+
+api:
+  encryption:
+    key: "SPXlsFbRuIwan1L4E96bnzCJiRfnCszLDKqZhRu5/8k="
+
+ota:
+  - platform: esphome
+    password: "f95e7d66cd0255aee677569992f63570"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  ap:
+    ssid: "P4Mini Fallback Hotspot"
+    password: "5slstk9DZ6Q2"
+
+
+time:
+ #- platform: homeassistant
+    #id: ha_time
+    #on_time_sync:
+      #- script.execute: update_clock
+
+
+  - platform: homeassistant
+    id: homeassistant_time
+    on_time_sync:
+      - script.execute: update_clock
+      - if:
+          condition:
+            lambda: 'return id(device_last_restart).state == "";'
+          then:
+            - text_sensor.template.publish:
+                id: device_last_restart
+                state: !lambda 'return id(homeassistant_time).now().strftime("%a %d %b %Y - %I:%M:%S %p");'          
+    on_time:
+      - seconds: "*"
+        then:
+          - script.execute: update_clock
+
+  - platform: sntp
+    id: sntp_time
+    servers:
+     - ntp0.ntp-servers.net
+     - ntp1.ntp-servers.net
+     - ntp2.ntp-servers.net
+    on_time_sync:
+      - script.execute: update_clock
+    on_time:
+      - minutes: '*'
+        seconds: 0
+        then:
+          - script.execute: update_clock
+
+globals:
+
+  - id: current_image_index
+    type: int
+    restore_value: true
+    initial_value: '0'
+
+  - id: alarm_panel_pending_action
+    type: std::string
+    restore_value: no
+    initial_value: ""
+
+
+  - id: current_radio_station
+    type: int
+    restore_value: true
+    initial_value: '0'  # Commence avec Fun Radio (0=Fun, 1=Skyrock, 2=Sud, 3=RTL2)  
+
+  - id: display_timeout
+    type: int
+    restore_value: true
+    initial_value: "2"
+
+  - id: global_is_assisting
+    type: bool
+    restore_value: false  
+
+  - id: timer_running
+    type: bool
+    restore_value: no
+    initial_value: 'false' # Indique si le timer est en cours d'exécution    
+
+  - id: timer_started
+    type: bool
+    restore_value: no
+    initial_value: "false"
+  
+  - id: is_alarm_active
+    type: bool
+    initial_value: 'false'
+
+  - id: is_timer_finished
+    type: bool
+    initial_value: 'false'
+
+  - id: timer_active
+    type: bool
+    initial_value: 'false'
+
+  - id: wifi_connection
+    type: bool
+    restore_value: no
+    initial_value: "false"
+
+  - id: api_connection
+    type: bool
+    restore_value: no
+    initial_value: "false"
+
+  - id: ota_active
+    type: bool
+    initial_value: 'false'
+
+  - id: mic_muted
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+  - id: init_in_progress
+    type: bool
+    restore_value: false
+    initial_value: "true"
+
+  - id: auto_off_timer_active
+    type: bool
+    initial_value: 'false'
+    
+  - id: voice_assistant_phase
+    type: int
+    restore_value: false
+    initial_value: ${voice_assist_not_ready_phase_id}
+  - id: global_first_active_timer
+    type: voice_assistant::Timer
+    restore_value: false
+  - id: global_is_timer_active
+    type: bool
+    restore_value: false
+  - id: global_first_timer
+    type: voice_assistant::Timer
+    restore_value: false
+  - id: global_is_timer
+    type: bool
+    restore_value: false  
+
+  - id: countdown_time
+    type: int
+    restore_value: no
+    initial_value: '0'
+  - id: total_timer_time
+    type: int
+    restore_value: no
+    initial_value: '0'    
+
+  - id: current_pin
+    type: std::string
+    initial_value: ""   
+
+  - id: current_track_id
+    type: int
+    initial_value: '0'
+  - id: is_playing
+    type: bool
+    initial_value: 'false'
+  - id: volume_level
+    type: int
+    initial_value: '50'
+  - id: track_count
+    type: int
+    initial_value: '0'  
+
+  - id: show_playlist
+    type: bool
+    initial_value: 'false'
+  - id: current_time
+    type: int
+    initial_value: '0'
+  - id: total_time
+    type: int
+    initial_value: '180'  
+
+  - id: current_radio_track_id
+    type: int
+    initial_value: '-1'
+    
+  - id: current_music_track_id
+    type: int
+    initial_value: '-1' 
+
+  - id: current_volume
+    type: float  
+    initial_value: '0.5'
+  - id: is_muted
+    type: bool
+    initial_value: 'false'
+  - id: volume_before_mute
+    type: float
+    initial_value: '0.5'
+  # Nouveau global pour empêcher le sleep pendant les interactions
+  - id: touch_active
+    type: bool
+    initial_value: 'false'
+
+  - id: idle_delay_seconds
+    type: int
+    initial_value: '300' 
+
+  - id: s_saver_visible
+    type: bool
+    restore_value: no
+    initial_value: "false"   
+
+  - id: repeat_modes
+    type: std::vector<std::string>
+    initial_value: '{"all", "one", "off"}'
+  - id: repeat_icons
+    type: std::vector<std::string>
+    initial_value: '{"${repeat_all_icon}", "${repeat_one_icon}", "${repeat_off_icon}"}'
+  - id: current_repeat_mode_idx
+    type: int
+    initial_value: '0'
+  - id: tmp_repeat_mode
+    type: std::string
+    restore_value: no
+    initial_value: '"all"'
+  - id: tmp_repeat_icon
+    type: std::string
+    restore_value: no
+    initial_value: '"${repeat_all_icon}"'
+  - id: cover_url
+    type: std::string
+    restore_value: no
+    initial_value: '""'
+  - id: duration_slider_user_interaction
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: slider_position
+    type: float
+    restore_value: no
+    initial_value: '0.5'
+  - id: pending_cover_url
+    type: std::string
+    restore_value: no
+    initial_value: '""'
+  - id: pending_repeat_value
+    type: std::string
+    restore_value: no
+    initial_value: '""'
+
+  - id: camera_streaming_active
+    type: bool
+    restore_value: no
+    initial_value: 'false'  
+
+number:
+  - platform: template
+    id: brightness_slider
+    name: "Luminosité Écran"
+    icon: "mdi:brightness-6"
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    mode: slider
+    optimistic: true
+    restore_value: true
+    initial_value: 50
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: 'return x > 0;'
+            then:
+              - light.turn_on:
+                  id: backlight
+                  brightness: !lambda 'return x / 100.0;'
+            else:
+              - light.turn_off:
+                  id: backlight
+
+  - platform: template
+    name: "Screen Off"
+    id: auto_off
+    optimistic: true
+    restore_value: true
+    min_value: -1
+    max_value: 300
+    step: 1
+    unit_of_measurement: s
+    icon: 'mdi:television-off'
+    disabled_by_default: true
+    initial_value: 0
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: current_timeout_value
+            text: !lambda |-
+              int timeout = id(auto_off).state;
+              if (timeout == -1) return "OFF";
+              return (std::to_string(timeout) + "s").c_str();
+
+
+script:
+  - id: update_clock
+    then:
+      # Mise à jour de l'heure (format HH:MM)
+      - lvgl.label.update:
+          id: time_label
+          text: !lambda |-
+            auto time = id(homeassistant_time).now();
+            return str_sprintf("%02d:%02d", time.hour, time.minute);
+
+
+      # Mise à jour de l'aiguille des secondes
+      - lvgl.indicator.update:
+          id: second_hand
+          value: !lambda return id(homeassistant_time).now().second;
+      
+      # Mise à jour de l'aiguille des minutes  
+      - lvgl.indicator.update:
+          id: minute_hand
+          value: !lambda return id(homeassistant_time).now().minute;
+      
+      # Mise à jour de l'aiguille des heures
+      - lvgl.indicator.update:
+          id: hour_hand
+          value: !lambda |-
+            auto time = id(homeassistant_time).now();
+            int hour = time.hour % 12;
+            int minute = time.minute;
+            return (hour * 60) + minute;            
+      
+      # Mise à jour de la date avec jour de la semaine (format: "Tuesday, Apr 23")
+      - lvgl.label.update:
+          id: date_label
+          text: !lambda |-
+            auto time = id(homeassistant_time).now();
+            const char* days[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+            const char* months[] = {"", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+            return str_sprintf("%s, %s %02d", days[time.day_of_week - 1], months[time.month], time.day_of_month);
+
+sensor:
+
+  #- platform: sd_mmc_card
+    #type: total_space
+    #name: "SD card total space"
+  - platform: template
+    name: "Voice Assistant State"
+    lambda: |-
+      if (id(esp32_microphone).is_running()) {
+        return 1;
+      } else {
+        return 0;
+      }
+    update_interval: 2s
+
+  - platform: homeassistant
+    id: weather_temp
+    entity_id: weather.montauban
+    attribute: temperature
+    on_value: 
+      then:
+        - lvgl.label.update:
+            id: weather_temperature_page
+            text:
+              format: "%.0f°"
+              args: [id(weather_temp).state]
+             
+              
+  - platform: homeassistant
+    id: weather_humidity
+    entity_id: weather.montauban
+    attribute: humidity
+    on_value: 
+      then:
+        - lvgl.label.update:
+            id: weather_humidity_page
+            text:
+              format: "%.0f%%"
+              args: [id(weather_humidity).state]
+
+  - platform: homeassistant
+    id: media_player_volume_level
+    entity_id: "${media_player_entity}"
+    attribute: volume_level
+    on_value:
+      - lvgl.slider.update:
+          id: media_player_volume_slider
+          value: !lambda 'return int(x * 100);'
+
+
+
+# SRAM Usage sensor for ESP32-P4
+  # 1. Total SRAM memory usage
+  - platform: template
+    name: "SRAM Usage"
+    id: sram_usage
+    icon: mdi:memory
+    unit_of_measurement: "KB"
+    device_class: data_size
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      // Total SRAM size for ESP32-S3 = 512KB
+      const size_t total_sram = 512 * 1024;
+      size_t free_sram = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+      size_t used_sram = total_sram - free_sram;
+      return used_sram / 1024.0; // Return used memory in KB
+    on_value:
+      then:
+        - lvgl.bar.update:
+            id: sram_memory_bar
+            value: !lambda |-
+              const size_t total_sram = 512 * 1024; // 512KB for ESP32-S3
+              size_t free_sram = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+              size_t used_sram = total_sram - free_sram;
+              return (int)(((double)used_sram / total_sram) * 100);
+        - lvgl.label.update:
+            id: sram_memory_label
+            text: !lambda |-
+              const size_t total_sram = 512 * 1024;
+              size_t free_sram = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+              size_t used_sram = total_sram - free_sram;
+              static char sram_buf[32];
+              snprintf(sram_buf, sizeof(sram_buf), "%.1f/%.0f KB", 
+                      used_sram/1024.0, total_sram/1024.0);
+              return sram_buf;
+
+  # 2. PSRAM Usage sensor for ESP32-P4 (32MB)
+  - platform: template
+    name: "PSRAM Usage"
+    id: psram_usage
+    icon: mdi:memory
+    unit_of_measurement: "MB"
+    device_class: data_size
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      // Total PSRAM size for ESP32-P4 = 32MB
+      const size_t total_psram = 32 * 1024 * 1024;
+      size_t free_psram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+      
+      // If PSRAM is not available, return 0
+      if (heap_caps_get_total_size(MALLOC_CAP_SPIRAM) == 0) {
+        return 0.0;
+      }
+      
+      size_t used_psram = total_psram - free_psram;
+      return used_psram / (1024.0 * 1024.0); // Return used memory in MB
+    on_value:
+      then:
+        - lvgl.bar.update:
+            id: psram_memory_bar
+            value: !lambda |-
+              const size_t total_psram = 32 * 1024 * 1024; // 32MB for ESP32-P4
+              size_t free_psram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+              
+              if (heap_caps_get_total_size(MALLOC_CAP_SPIRAM) == 0) return 0;
+              
+              size_t used_psram = total_psram - free_psram;
+              return (int)(((double)used_psram / total_psram) * 100);
+        - lvgl.label.update:
+            id: psram_memory_label
+            text: !lambda |-
+              const size_t total_psram = 32 * 1024 * 1024;
+              size_t free_psram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+              static char psram_buf[32];
+              
+              if (heap_caps_get_total_size(MALLOC_CAP_SPIRAM) == 0) {
+                snprintf(psram_buf, sizeof(psram_buf), "No PSRAM");
+              } else {
+                size_t used_psram = total_psram - free_psram;
+                snprintf(psram_buf, sizeof(psram_buf), "%.1f/%.0f MB", 
+                        used_psram/(1024.0*1024.0), total_psram/(1024.0*1024.0));
+              }
+              return psram_buf;
+
+  - platform: internal_temperature
+    name: "ESP32 Internal Temperature"
+    id: esp32_temperature
+    update_interval: 30s
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: chip_temperature_label
+            text:
+              format: "%.1f°C"
+              args: [id(esp32_temperature).state] 
+
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    id: wifi_signal_db
+    update_interval: 30s
+    unit_of_measurement: "dBm"
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: wifi_signal_label
+            text:
+              format: "%.0f dBm"
+              args: [id(wifi_signal_db).state]   
+
+
+
+text_sensor:
+
+
+  - platform: template
+    name: "Voice Assistant Status"
+    id: voice_status
+    update_interval: 5s
+    lambda: |-
+      if (id(esp32_microphone).is_running()) {
+        return {"Listening"};
+      } else {
+        return {"Idle"};
+      }  
+
+
+  - platform: template
+    name: "Play Music"  
+
+  - platform: template
+    id: current_station_url
+    name: "Current Station URL"
+
+  #- platform: sd_mmc_card
+    #sd_card_type:
+      #name: "SD card type"  
+
+  - platform: template
+    name: 'Last Restart'
+    id: device_last_restart
+    icon: mdi:clock
+    entity_category: diagnostic
+
+  - platform: homeassistant
+    id: sun_state
+    entity_id: sun.sun 
+
+  - platform: homeassistant
+    id: current_date
+    entity_id: sensor.date
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: date_label
+            text: !lambda |-
+              return id(current_date).state.c_str();
+
+
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+      id: wifi_ip_address
+      on_value:
+        then:
+          - lvgl.label.update:
+              id: ip_address_label
+              text: !lambda return id(wifi_ip_address).state.c_str();
+
+
+
+  - platform: homeassistant
+    id: media_player_esphome
+    entity_id: "${media_player_entity}"          
+
+  #- platform: homeassistant
+    #id: media_player_cover
+    #entity_id: "${media_player_entity}"
+    #attribute: entity_picture
+    #on_value:
+      #- lambda: |-
+          #id(pending_cover_url) = x;
+      #- script.execute: update_cover_script
+
+
+  - platform: homeassistant
+    id: media_player_artist_sensor
+    entity_id: "${media_player_entity}"
+    attribute: media_artist
+    on_value:
+      - delay: 1s
+      - lvgl.label.update:
+          id: media_player_artist_label
+          text: !lambda return x;
+
+
+  - platform: homeassistant
+    id: media_player_title_sensor
+    entity_id: "${media_player_entity}"
+    attribute: media_title
+    on_value:
+      - delay: 1s
+      - lvgl.label.update:
+          id: station_name_label
+          text: !lambda return x;          
+
+
+  #- platform: homeassistant
+    #id: media_player_friendly_name
+    #entity_id: "${media_player_entity}"
+    #attribute: friendly_name
+    #on_value:
+      #- lvgl.label.update:
+          #id: media_player_name_label
+          #text: !lambda return x;
+  - platform: homeassistant
+    id: alarm_panel_sensor_state
+    entity_id: ${alarm_panel_entity}
+    on_value:
+      then:
+
+        - if:
+            condition:
+              lambda: 'return x == "disarmed";'
+            then:
+              - lvgl.widget.show: alarm_panel_button_home
+              - lvgl.widget.show: alarm_panel_button_away
+              - lvgl.widget.show: alarm_panel_button_night
+              - lvgl.widget.show: alarm_panel_button_vacation             
+              - lvgl.widget.hide: alarm_panel_button_disarmed
+
+              - lvgl.label.update:
+                  id: alarm_panel_status
+                  text_color: color_steel_blue
+              - lvgl.label.update:
+                  id: alarm_panel_state_icon
+                  text_color: color_blue
+                  text: "${shield_disarm_icon}"
+              - lvgl.obj.update:
+                  id: alarm_panel_state_icon_bg
+                  bg_color: color_blue
+
+            else:
+              - lvgl.label.update:
+                  id: alarm_panel_status
+                  text_color: color_crimson
+              - lvgl.widget.hide: alarm_panel_button_home
+              - lvgl.widget.hide: alarm_panel_button_away
+              - lvgl.widget.hide: alarm_panel_button_night
+              - lvgl.widget.hide: alarm_panel_button_vacation             
+              - lvgl.widget.show: alarm_panel_button_disarmed
+
+        - if:
+            condition:
+              lambda: 'return x == "arming";'
+            then:
+              - lvgl.label.update:
+                  id: alarm_panel_state_icon
+                  text_color: color_gray
+                  text: "${shield_arming_icon}"
+              - lvgl.obj.update:
+                  id: alarm_panel_state_icon_bg
+                  bg_color: color_gray
+
+        - if:
+            condition:
+              lambda: 'return x == "armed_home";'
+            then:
+              - lvgl.label.update:
+                  id: alarm_panel_state_icon
+                  text_color: color_green
+                  text: "${shield_home_icon}"
+              - lvgl.obj.update:
+                  id: alarm_panel_state_icon_bg
+                  bg_color: color_green
+
+        - if:
+            condition:
+              lambda: 'return x == "armed_away";'
+            then:
+              - lvgl.label.update:
+                  id: alarm_panel_state_icon
+                  text_color: color_green
+                  text: "${shield_away_icon}"
+              - lvgl.obj.update:
+                  id: alarm_panel_state_icon_bg
+                  bg_color: color_green
+
+        - if:
+            condition:
+              lambda: 'return x == "armed_night";'
+            then:
+              - lvgl.label.update:
+                  id: alarm_panel_state_icon
+                  text_color: color_green
+                  text: "${shield_night_icon}"
+              - lvgl.obj.update:
+                  id: alarm_panel_state_icon_bg
+                  bg_color: color_green
+
+        - if:
+            condition:
+              lambda: 'return x == "armed_vacation";'
+            then:
+              - lvgl.label.update:
+                  id: alarm_panel_state_icon
+                  text_color: color_green
+                  text: "${shield_vacation_icon}"
+              - lvgl.obj.update:
+                  id: alarm_panel_state_icon_bg
+                  bg_color: color_green
+
+
+  - platform: homeassistant
+    id: alarm_panel_sensor_name
+    entity_id: ${alarm_panel_entity}
+    attribute: friendly_name
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: alarm_panel_label_name
+            text: !lambda return x;                                   
+
+
+captive_portal:
+
+network:
+  enable_ipv6: true
+
+
+psram:
+  speed: 200MHz
+
+  
+esp_ldo:
+  - voltage: 2.5V
+    channel: 3     
+
+
+output:
+
+  - platform: ledc
+    pin: GPIO23 
+    id: backlight_pwm
+    frequency: 100Hz
+
+
+i2s_audio:
+  - id: audio_bus
+    i2s_mclk_pin: GPIO13
+    i2s_lrclk_pin: GPIO10
+    i2s_bclk_pin: GPIO12
+
+# ES8311 аудио DAC
+audio_dac:
+  - platform: es8311
+    id: es8311_dac
+    i2c_id: i2c_bus
+    address: 0x18
+
+audio_adc:
+  - platform: es7210
+    id: es7210_adc
+    i2c_id: i2c_bus
+    address: 0x14 #0x36
+
+
+microphone:
+  - platform: i2s_audio
+    id: esp32_microphone
+    i2s_audio_id: audio_bus
+    i2s_din_pin: GPIO48
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    adc_type: external
+
+speaker:
+  - platform: i2s_audio
+    id: esp32_speaker
+    i2s_audio_id: audio_bus
+    i2s_dout_pin: GPIO9
+    audio_dac: es8311_dac
+    dac_type: external
+    channel: mono
+    buffer_duration: 100ms
+    bits_per_sample: 16bit
+    sample_rate: 48000
+
+  - platform: mixer
+    id: mixing_speaker
+    output_speaker: esp32_speaker
+    source_speakers:
+      - id: announcement_mixing_input
+        timeout: never
+      - id: media_mixing_input
+        timeout: never
+
+  - platform: resampler
+    id: announcement_resampling_speaker
+    output_speaker: announcement_mixing_input
+    sample_rate: 48000
+    bits_per_sample: 16
+
+  - platform: resampler
+    id: media_resampling_speaker
+    output_speaker: media_mixing_input
+    sample_rate: 48000
+    bits_per_sample: 16
+
+media_player:
+  - platform: speaker
+    name: "ESP32 P4 Media Player"
+    id: speaker_media_player
+    codec_support_enabled: true
+    # buffer_size: 2000000
+    task_stack_in_psram: true
+    volume_min: 0.5
+    volume_max: 0.75
+    volume_increment: 0.05
+    announcement_pipeline:
+      speaker: announcement_resampling_speaker
+      format: FLAC
+      sample_rate: 48000
+      num_channels: 1
+    media_pipeline:
+      speaker: media_resampling_speaker
+      format: FLAC
+      num_channels: 1
+      sample_rate: 48000
+    on_announcement:
+      - if:
+          condition:
+            - microphone.is_capturing:
+          then:
+            - micro_wake_word.stop
+            - voice_assistant.stop
+      - mixer_speaker.apply_ducking:
+          id: media_mixing_input
+          decibel_reduction: 20
+          duration: 0.0s
+      - switch.turn_on: audio_amplifier
+      - delay: 100ms
+    on_state:
+      if:
+        condition:
+          and:
+            - not:
+                voice_assistant.is_running:
+            - not:
+                media_player.is_announcing:
+        then:
+          - mixer_speaker.apply_ducking:
+              id: media_mixing_input
+              decibel_reduction: 0
+              duration: 1.0s
+    on_play:
+      - logger.log: "Media player started playing, disabling microphone"
+      - switch.turn_on: audio_amplifier
+      - delay: 100ms
+      - micro_wake_word.stop
+      - voice_assistant.stop
+    on_idle:
+      - delay: 100ms
+      - switch.turn_off: audio_amplifier
+      - if:
+          condition:
+            not:
+              voice_assistant.is_running:
+          then:
+            - micro_wake_word.start
+
+
+
+micro_wake_word:
+  id: my_wake_word
+  models:
+    - okay_nabu
+  on_wake_word_detected:
+    then:
+      #- lvgl.page.show: listening_page 
+      - light.turn_on: backlight
+      - logger.log: "Wake word detected"
+      - voice_assistant.start:
+          wake_word: !lambda return wake_word;
+                                                                                     
+voice_assistant:
+  microphone: esp32_microphone
+  media_player: speaker_media_player
+  micro_wake_word: my_wake_word
+  noise_suppression_level: 2
+  auto_gain: 31dBFS
+  volume_multiplier: 2.0
+  conversation_timeout: 300s
+  on_end:
+    # Wait a short amount of time to see if an announcement starts
+    - wait_until:
+        condition:
+          - media_player.is_announcing:
+        timeout: 0.5s
+    # Announcement is finished and the I2S bus is free
+    - wait_until:
+        - and:
+            - not:
+                media_player.is_announcing:
+            - not:
+                media_player.is_playing:
+    - micro_wake_word.start:
+  on_client_connected:
+    - micro_wake_word.start:
+  on_client_disconnected:
+    - micro_wake_word.stop:
+
+
+
+
+switch:
+# Усилитель мощности
+  - platform: gpio
+    pin: GPIO11 # BSP_POWER_AMP_IO
+    name: "Audio Amplifier"
+    id: audio_amplifier
+    restore_mode: ALWAYS_OFF 
+
+  #- platform: gpio
+    #pin: GPIO45  # ES8311_PA
+    #name: "SD Enable"
+    #restore_mode: ALWAYS_ON
+    #id: SD_enable_switch
+    #inverted: false    
+
+
+#sd_mmc_card:
+  #id: sd_card
+  #clk_pin: GPIO43
+  #cmd_pin: GPIO44
+  #data0_pin: GPIO39
+  #data1_pin: GPIO40
+  #data2_pin: GPIO41
+  #data3_pin: GPIO42
+  #mode_1bit: false
+  #power_ctrl_inverted: true
+  #power_ctrl_pin: 45
+  #slot: 1
+      
+
+external_components:
+
+  - source: github://pr#10382
+    components: [mipi_dsi]
+    refresh: 1h
+  
+
+  #- source: github://NonaSuomy/esphome@es8311-analog-mic
+    #components: [ es8311 ]
+    #refresh: 0s
+
+
+
+
+
+
+esp32_hosted:
+  active_high: true
+  variant: ESP32C6
+  reset_pin: GPIO54
+  cmd_pin: GPIO19
+  clk_pin: GPIO18
+  d0_pin: GPIO14
+  d1_pin: GPIO15
+  d2_pin: GPIO16
+  d3_pin: GPIO17
+  slot: 1
+ 
+
+
+
+  
+
+
+
+
+i2c:
+  - id: i2c_bus
+    sda: GPIO7  
+    scl: GPIO8  
+    scan: true
+    frequency: 400kHz    
+
+touchscreen:
+  - platform: gt911
+    calibration:
+      x_min: 0
+      y_max: 480
+      y_min: 0
+      x_max: 800
+    id: touch_screen
+    on_touch:
+      - lambda: |-
+          ESP_LOGD("touchscreen", "Touch detected at (%d, %d)", touch.x, touch.y);
+      - light.turn_on: backlight          
+    transform:
+      swap_xy: true
+      mirror_x: true
+      mirror_y: false    
+
+
+
+light:
+  - platform: monochromatic
+    output: backlight_pwm
+    name: "Display Backlight"
+    id: backlight
+    restore_mode: RESTORE_DEFAULT_ON
+    default_transition_length: 250ms
+
+
+color:
+
+  - id: color_sky_blue
+    hex: 3FA7F3
+  - id: color_slate_blue_gray
+    hex: 343645
+  - id: color_steel_blue
+    hex: 606682
+  - id: color_misty_blue
+    hex: 9BA2BC
+  - id: color_black
+    hex: 0d0d0d
+  - id: color_dark_gray
+    hex: 333333
+  - id: color_gray
+    hex: 666666
+  - id: color_white
+    hex: f2f0eb
+  - id: color_red
+    hex: ff0000
+  - id: color_crimson
+    hex: f5075c
+  - id: color_blue
+    hex: 2fc0ff
+  - id: color_yellow
+    hex: e7c12c
+  - id: color_amber
+    hex: f4a900
+  - id: color_mint
+    hex: 39d19c
+  - id: color_green
+    hex: 00ff00
+  - id: color_orange
+    hex: f07c40
+  - id: color_deep_orange
+    hex: ff6600
+  - id: color_violet
+    hex: 926BC7
+  - id: color_dark_blue
+    hex: 4867aa
+  - id: color_deep_purple
+    hex: 543D72  
+
+
+  - id: color_nova
+    hex: 93A4EC
+
+  - id: color_navy
+    hex: aad6ec
+
+  - id: color_cyan
+    hex: 00FFFF  
+  - id: color_magenta
+    hex: FF00FF  
+
+  - id: color_aqua
+    hex: "00ffff"          
+
+  # Nova Colors
+  - id: nova_color # pink
+    hex: "e38de3"
+  - id: pri_color # light (mantle)
+    hex: "24273a"
+  - id: sec_color # dark (crust)
+    hex: "181926"
+  - id: text_color
+    hex: "cad3f5"
+  - id: off_color
+    hex: "5b6078"
+
+
+  - id: blue_color
+    hex: "6b93e3"
+  - id: green_color
+    hex: "a6da95"
+  - id: yellow_color
+    hex: "ffd17a"
+  - id: orange_color
+    hex: "e0752b"
+  - id: red_color
+    hex: "de455c"  
+
+  - id: lcars_space_white
+    hex: "f5f6fa"
+  - id: lcars_violet_creme
+    hex: "ddbbff"
+  - id: lcars_green
+    hex: "33cc99"
+  - id: lcars_magenta
+    hex: "cc4499"
+  - id: lcars_blue
+    hex: "4455ff"
+  - id: lcars_yellow
+    hex: "ffcc33"
+  - id: lcars_violet
+    hex: "9944ff"
+  - id: lcars_orange
+    hex: "ff7700"
+  - id: lcars_african_violet
+    hex: "cc88ff"
+  - id: lcars_text_purple
+    hex: "cc77ff"
+  - id: lcars_red
+    hex: "dd4444"
+  - id: lcars_emerald
+    hex: "00bb00"
+  - id: lcars_crimson
+    hex: "cc0000"
+  - id: lcars_navy_gray
+    hex: "2C374B"
+  - id: lcars_slate_gray
+    hex: "6E748C"
+  - id: lcars_teal
+    hex: "2A7092"
+  - id: lcars_coral
+    hex: "FA6851"
+  - id: lcars_charcoal
+    hex: "51596C"
+
+  - id: color_primary
+    hex: '4A90E2'
+  - id: color_secondary
+    hex: '2ECC71'
+  - id: color_text
+    hex: 'FFFFFF'
+  - id: color_background
+    hex: '1A1A1A'
+  - id: color_inactive
+    hex: '666666'  
+
+  - id: idle_color
+    hex: ${idle_illustration_background_color}
+  - id: listening_color
+    hex: ${listening_illustration_background_color}
+  - id: thinking_color
+    hex: ${thinking_illustration_background_color}
+  - id: replying_color
+    hex: ${replying_illustration_background_color}
+  - id: loading_color
+    hex: ${loading_illustration_background_color}
+  - id: error_color
+    hex: ${error_illustration_background_color}
+  - id: timer_color
+    hex: ${timer_illustration_background_color}
+  - id: active_timer_color
+    hex: "26ed3a"
+  - id: paused_timer_color
+    hex: "3b89e3"
+  - id: active_ota_color
+    hex: "ffff00"
+  - id: active_mute_color
+    hex: "ff0000"
+
+
+font:
+
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: 300
+      italic: true
+    id: font_request
+    size: 15
+    glyphsets:
+      - ${font_glyphsets}
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: 300
+    id: font_response
+    size: 15
+    glyphsets:
+      - ${font_glyphsets}
+
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: 300
+    id: nunito_14
+    size: 15
+    glyphsets:
+      - ${font_glyphsets}
+
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: 300
+    id: nunito_16
+    size: 16
+    glyphsets:
+      - ${font_glyphsets}
+
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: 300
+    id: nunito_18
+    size: 18
+    glyphsets:
+      - ${font_glyphsets}   
+
+
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: 300
+    id: nunito_23
+    size: 23
+    glyphsets:
+      - ${font_glyphsets}  
+
+
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: 300
+    id: nunito_26
+    size: 26
+    glyphsets:
+      - ${font_glyphsets}    
+
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: 300
+    id: nunito_28
+    size: 26
+    glyphsets:
+      - ${font_glyphsets}                 
+
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: 300
+    id: nunito_24
+    size: 24
+    glyphsets:
+      - ${font_glyphsets}           
+
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: 300
+    id: nunito_36
+    size: 36
+    glyphsets:
+      - ${font_glyphsets} 
+
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: 300
+    id: nunito_42
+    size: 42
+    glyphsets:
+      - ${font_glyphsets}                   
+
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: 300
+    id: nunito_60
+    size: 60
+    glyphsets:
+      - ${font_glyphsets}      
+  - file:
+      type: gfonts
+      family: ${font_family}
+      weight: 300
+    id: font_timer
+    size: 30
+    glyphsets:
+      - ${font_glyphsets} 
+
+
+ 
+
+
+  - file: "https://github.com/BigBobbas/ESP32-S3-Box3-Custom-ESPHome/raw/main/fonts/materialdesignicons-webfont.ttf"
+    id: mdi36
+    size: 36
+    bpp: 4
+    glyphs: [
+      "\U000F0BC4",#alarm away
+      "\U000F0384",#music
+      "\U000F07C5",#sound
+      "\U000F1322",#tools
+      "\U000F07AE",#cctv
+      "\U000F0493",#settings cog
+      "\U000F05CB",#voice
+      "\U000F0502",#screen settings
+      "\U000F1C6F",#info
+      "\U000F0521",#scr 
+      "\U000F04B2",#sleep
+      "\U000F1110",#s_saver
+      "\U000F0D90",#screen off
+      "\U000F009E",#bell
+      "\U000F04DB",#stop
+      "\U000F18DD",#light_mut
+      "\U000F062C",#source
+      "\U000F10FE",#kubernetes
+      "\U000F02A4",#github
+      "\U000F06B2",#angular
+      "\U000F0439",#radio
+      "\U000F0BB1",#next
+      "\U000F036B",#videocall
+      "\U000F1A13",#heure
+      "\U000F0F30",#meteo
+      "\U000F1923",#timer
+      "\U000F056E",#dashboard
+      "\U000F07DC",#micro-sd
+      "\U000F0CB8",#music_play
+      "\U000F08D6",#settings
+      "\U000F0565",#arming
+      "\U000F050F",#temp sensor
+      "\U000F0150",#clock
+      "\U000F081A",#door
+      "\U000F06D9",#garage
+      "\U000F1A8B",#shutter
+      "\U000F02E9",#Gallery
+      
+      ]
+
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: mdi_icons_24
+    size: 24
+    bpp: 4
+    glyphs: [
+      "\U000F068A", # shield home
+      "\U000F1828", # shield moon
+      "\U000F099D", # shield lock
+      "\U000F06BB", # shield plane
+      "\U000F099E", # shield off
+      "\U000F0498", # shield
+    ]
+
+  - file: "fonts/Icons.ttf"
+    id: icons_32
+    size: 32
+    bpp: 4
+    glyphs: [
+      "\U0000e900",
+      "\U0000e901",
+      "\U0000e902",
+      "\U0000e903",
+      "\U0000e904",
+      "\U0000e905",
+      "\U0000e906",
+      "\U0000e907",
+      "\U0000e908",
+      "\U0000e909",
+      "\U0000e90a",
+      "\U0000e90b",
+      "\U0000e90c",
+      "\U0000e90d",
+      "\U0000e90e",
+      "\U0000e90f",
+      "\U0000e910",
+      "\U0000e911",
+      "\U0000e912",
+      "\U0000e913",
+      "\U0000e914",
+      "\U0000e915",
+      "\U0000e916",
+      "\U0000e917",
+      "\U0000e918",
+      "\U0000e919",
+
+    ]
+  - file: "fonts/Icons.ttf"
+    id: icons_36
+    size: 36
+    bpp: 4
+    glyphs: [
+      "\U0000e900",
+      "\U0000e901",
+      "\U0000e902",
+      "\U0000e903",
+      "\U0000e904",
+      "\U0000e905",
+      "\U0000e906",
+      "\U0000e907",
+      "\U0000e908",
+      "\U0000e909",
+      "\U0000e90a",
+      "\U0000e90b",
+      "\U0000e90c",
+      "\U0000e90d",
+      "\U0000e90e",
+      "\U0000e90f",
+      "\U0000e910",
+      "\U0000e911",
+      "\U0000e912",
+      "\U0000e913",
+      "\U0000e914",
+      "\U0000e915",
+      "\U0000e916",
+      "\U0000e917",
+      "\U0000e918",
+      "\U0000e919",
+
+      ]
+
+  - file: "fonts/icons_v2.ttf"
+    id: icons_38
+    size: 38
+    bpp: 4
+    glyphs: [
+      "\U0000e909", # power
+      "\U0000e90c", # back step
+      "\U0000e90d", # forward step
+      "\U0000e912", # repeat_all
+      "\U0000e913", # repeat_off
+      "\U0000e914", # repeat_one
+      "\U0000e90a", # play
+      "\U0000e90b", # pause
+      "\U0000e91c", # stop
+      "\U0000e923", # locate
+      "\U0000e924", # docked
+    ]
+
+  - file: "fonts/icons_v2.ttf"
+    id: icons_48
+    size: 48
+    bpp: 4
+    glyphs: [
+      "\U0000e90a", # play
+      "\U0000e90b", # pause
+      "\U0000e91f", # arrow_up
+      "\U0000e920", # arrow_down
+      "\U0000e91c", # stop
+      "\U0000e923", # locate
+      "\U0000e924", # docked
+      "\U0000e93b", # air_conditioner 
+      "\U0000e936", # heating
+
+    ]
+
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: mdi_media
+    size: 60 #50
+    bpp: 8
+    glyphs: [
+      "\U000F040A", # mdi-media_play
+      "\U000F03E4", # mdi-media_pause
+      "\U000F04AE", # mdi-media_previous_track
+      "\U000F04AD", # mdi-media_next_track 
+      "\U000F040E", # mdi-media_play_pause
+      "\U000F0662", # skip-next-circle-outline
+      "\U000F0664", # skip-previous-circle-outline
+      "\U000F0453", # refresh
+      "\U000F03E3", # pause
+      "\U000F050F",#temp sensor
+      "\U000F024A",#garden/flower
+      "\U000F0EBA",#stats
+      "\U000F1C6F",#info
+      "\U000F075A",#music
+      "\U000F036F",#voice settings
+      "\U000F0502",#screen settings
+      "\U000F08D6",#settings
+      "\U000F068A",#alarm home
+      "\U000F0BC4",#alarm away
+      "\U000F1828",#armed night
+      "\U000F099E",#disarmed
+      "\U000F0565",#arming
+      "\U000F1A12",#home 
+      "\U000F058E",#humidity         
+      "\U000F0590",#weather
+      "\U000F07AE",#cctv
+      "\U000F1322",#tools
+      "\U000F0493",#settings cog
+      "\U000F0521",#toggle on
+      "\U000F0439",#radio_active
+      "\U000F0CB8",#music_play
+      "\U000F1A13",#heure
+      "\U000F0F30",#meteo
+      "\U000F1923",#timer
+      "\U000F02A4",#github
+      "\U000F062C",#source
+      "\U000F18DD",#light_mut
+      "\U000F056E",#dashboard
+      "\U000F07DC",#micro-sd
+      "\U000F0150",#clock
+      "\U000F0384",#music-box
+      "\U000F035C",#menu
+      "\U000F075D",#volume-plus
+      "\U000F075E",#volume-minus
+      "\U000F0581",#volume-off
+      "\U000F1AE1",#timer_play
+      "\U000F02E9",#Gallery
+      "\U000F07D1",#home-automation
+      "\U000F18DE",#ceiling-light-multiple-outline
+      "\U000F0450",# Icône rafraîchir
+      "\U000F061A", # illumination (lux)
+
+                      
+
+      ]    
+
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: mdi_icons_40
+    size: 40
+    bpp: 4
+    glyphs: [
+      "\U000F068A", # shield home
+      "\U000F1828", # shield moon
+      "\U000F099D", # shield lock
+      "\U000F06BB", # shield plane
+      "\U000F099E", # shield off
+      "\U000F0498", # shield
+    ]
+
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: mdi_icons_32
+    size: 32
+    bpp: 4
+    glyphs: [
+      "\U000F068A", # shield home
+      "\U000F1828", # shield moon
+      "\U000F099D", # shield lock
+      "\U000F06BB", # shield plane
+      "\U000F099E", # shield off
+      "\U000F0498", # shield
+    ]    
+
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: mdi_icons_52
+    size: 52
+    bpp: 4
+    glyphs: [
+      "\U000F068A", # shield home
+      "\U000F1828", # shield moon
+      "\U000F099D", # shield lock
+      "\U000F06BB", # shield plane
+      "\U000F099E", # shield off
+      "\U000F0498", # shield
+      "\U000F0826", # home
+      "\U000F1A46", # away
+    ]
+
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: mdi_icons_35
+    size: 35
+    bpp: 4
+    glyphs: [
+      "\U000F068A", # shield home
+      "\U000F1828", # shield moon
+      "\U000F099D", # shield lock
+      "\U000F06BB", # shield plane
+      "\U000F099E", # shield off
+      "\U000F0498", # shield
+      "\U000F0826", # home
+      "\U000F1A46", # away
+    ]    
+
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: mdi_icons_68
+    size: 68
+    bpp: 4
+    glyphs: [
+      "\U000F068A", # shield home
+      "\U000F1828", # shield moon
+      "\U000F099D", # shield lock
+      "\U000F06BB", # shield plane
+      "\U000F099E", # shield off
+      "\U000F0498", # shield
+    ]    
+
+
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: mdi_icons_45
+    size: 45
+    bpp: 4
+    glyphs: [
+      "\U000F068A", # shield home
+      "\U000F1828", # shield moon
+      "\U000F099D", # shield lock
+      "\U000F06BB", # shield plane
+      "\U000F099E", # shield off
+      "\U000F0498", # shield
+    ]   
+
+
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: mdi_icons_30
+    size: 30
+    bpp: 4
+    glyphs: [
+      "\U000F068A", # shield home
+      "\U000F1828", # shield moon
+      "\U000F099D", # shield lock
+      "\U000F06BB", # shield plane
+      "\U000F099E", # shield off
+      "\U000F0498", # shield
+    ]                 
+
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: mdi_35
+    size: 35 #50
+    bpp: 8
+    glyphs: [
+      "\U000F061A", # chip
+
+      ] 
+  - file: "fonts/icons_v2.ttf"
+    id: icons_28
+    size: 28
+    bpp: 4
+    glyphs: [
+      "\U0000e902", # exit
+      "\U0000e926", # fan
+      "\U0000e927", # room_plan
+      "\U0000e938", # humidity 
+      "\U0000e937", # co2
+      "\U0000e93a", # air quality (tvoc)
+      "\U0000e939", # temperature 
+      "\U0000e92f", # illumination (lux)
+
+    ]
+
+  - file: "fonts/icons_v2.ttf"
+    id: icons_24
+    size: 24
+    bpp: 4
+    glyphs: [
+      "\U0000e902", # exit
+      "\U0000e926", # fan
+      "\U0000e927", # room_plan
+      "\U0000e938", # humidity 
+      "\U0000e937", # co2
+      "\U0000e93a", # air quality (tvoc)
+      "\U0000e939", # temperature 
+      "\U0000e92f", # illumination (lux)
+
+    ]    
+
+  - file: "gfonts://Roboto"
+    id: roboto_32
+    size: 32
+
+  - file: "gfonts://Roboto"
+    id: roboto_36
+    size: 36    
+  - file: "gfonts://Roboto"
+    id: roboto_42
+    size: 42      
+  - file: "gfonts://Roboto"
+    id: roboto_48
+    size: 48       
+
+  - file: "gfonts://Roboto"
+    id: roboto_60
+    size: 60        
+
+  - file: "gfonts://Roboto"
+    id: roboto_30
+    size: 30
+
+  - file: "gfonts://Roboto"
+    id: roboto_24
+    size: 24    
+
+  - file: "gfonts://Roboto"
+    id: roboto_20
+    size: 20
+
+  - file: "gfonts://Roboto"
+    id: roboto_18
+    size: 18    
+  
+  - file: "gfonts://Roboto"
+    id: roboto_16
+    size: 16
+    
+  - file: "gfonts://Roboto"
+    id: roboto_14
+    size: 14
+  - file: "gfonts://Roboto"
+    id: roboto_12
+    size: 12
+  - file: "gfonts://Roboto"
+    id: roboto_10
+    size: 10   
+
+  - file: "gfonts://Roboto"
+    id: roboto_8
+    size: 8          
+
+  - file: "fonts/Nunito-SemiBold.ttf"
+    id: nunito_20
+    size: 20
+    bpp: 4
+    glyphsets:
+      - GF_Latin_Core
+      # - GF_Greek_Core
+      - GF_Cyrillic_Core
+
+
+image:
+
+  defaults:
+    byte_order: little_endian
+    transparency: alpha_channel
+    type: rgb565
+  images:
+
+  - id: Sample
+    file: img/jpg/irise.jpg     
+
+  #- file: http://192.168.1.158:8080/iryQdAwo/cheon.jpg                             
+    #id: testone
+    #resize: 1280x720
+
+  #- file: "/img/anuvious.jpg"    
+    #id: test
+    #resize: 1280x720
+    
+  #- file:
+      #source: sd_card
+      #path: "img/anuvious.jpg"
+    #id: test
+    #resize: 1280x720
+
+  #- file: http://192.168.1.158:8080/ZAPTjwuz/simulation.jpg                  
+    #id: wallpaper
+    #resize: 1280x720    
+
+  - file: ${error_illustration_file}
+    id: casita_error
+    resize: 320x240
+
+  - file: ${idle_illustration_file}
+    id: casita_idle
+    resize: 320x240
+
+  - file: ${listening_illustration_file}
+    id: casita_listening
+    resize: 320x240
+
+  - file: ${thinking_illustration_file}
+    id: casita_thinking
+    resize: 320x240
+
+  - file: ${replying_illustration_file}
+    id: casita_replying
+    resize: 320x240
+
+  - file: ${timer_finished_illustration_file}
+    id: casita_timer_finished
+    resize: 320x240
+
+  - file: ${loading_illustration_file}
+    id: casita_initializing
+    resize: 320x240    
+
+display:
+  - platform: mipi_dsi
+    id: main_display
+    model: JC4880P443C
+    update_interval: never
+    auto_clear_enabled: false
+    rotation: 270
+
+
+lvgl:
+  
+  #buffer_size: 100% 
+  byte_order: little_endian
+  #buffer_size: 50%
+  #byte_order: litle_endian
+  displays:
+    - main_display
+  touchscreens:
+    - touch_screen
+  on_idle:
+    timeout: !lambda |-
+      int timeout = id(auto_off).state;
+      return (timeout == -1) ? 86400000 : (timeout * 1000);  // 24h si désactivé
+    then:
+      - if:
+          condition:
+            lambda: 'return id(auto_off).state > 0;'
+          then:
+            - light.turn_off: backlight
+
+      
+
+  style_definitions:
+    - id: round_mask
+      radius: 50%  # Crée un cercle parfait
+      clip_corner: true
+
+    - id: menu_button
+      radius: 40      
+      #text_font: nunito_20
+      text_align: CENTER
+      bg_color: 0x2F8CD8
+      bg_grad_color: 0x0460BD
+      bg_grad_dir: VER
+      border_width: 5
+      border_color: 0x1e84eb
+      border_opa: 70%
+      outline_width: 1
+    - id: time_style
+      text_color: 0xD5D5D5
+      bg_opa: TRANSP
+      radius: 5
+      border_color: 0xE9E9E9
+      border_width: 0
+      border_opa: 50%
+      pad_all: 0
+      shadow_width: 0
+      shadow_opa: TRANSP
+    - id: card
+      text_color: 0xD5D5D5
+      bg_color: 0x222222
+      bg_opa: COVER
+      radius: 20
+      outline_width: 0
+      border_width: 0
+      #border_opa:
+      pad_all: 0 
+    - id: weather_style
+      text_color: 0xD5D5D5
+      bg_color: 0
+      bg_opa: TRANSP
+      outline_width: 0
+      border_width: 0
+      #border_opa:
+      radius: 0
+      pad_all: 0
+    - id: meter_style
+      text_color: 0xD5D5D5
+      bg_color: 0x222222
+      bg_opa: COVER
+      radius: 10
+      outline_width: 0
+      border_width: 0
+      #border_opa:
+      pad_all: 0      
+    - id: button_light
+      bg_color: 0xCCCCCC
+      bg_grad_color: 0xFF4400
+      bg_grad_dir: HOR
+      border_width: 8
+      border_color: 0x222222
+      border_opa: 50%
+      outline_width: 1
+    - id: button_menu
+      text_color: 0xD5D5D5
+      bg_color: 0x222222
+      bg_opa: COVER
+      radius: 20
+      pad_all: 5
+    - id: button_checked
+      bg_color: 0xFF4400
+      bg_opa: COVER
+      text_color: 0xD5D5D5
+      radius: 20
+      pad_all: 5 
+    - id: sound_page
+      bg_opa: TRANSP
+      border_opa: TRANSP
+      radius: 0
+      text_color: 0xCCCCCC  # Gris clair pour le texte
+      width: 100%
+      height: 100%
+
+
+    - id: home_page
+      bg_opa: TRANSP
+      border_opa: TRANSP
+      radius: 0
+      text_color: 0xFFFFFF
+      width: 100%
+      height: 100%
+
+    - id: controls_page
+      bg_opa: TRANSP
+      border_opa: TRANSP
+      radius: 0
+      text_color: 0xFFFFFF
+      width: 100%
+      height: 100%  
+
+    - id: main_content
+      bg_opa: TRANSP
+      border_opa: TRANSP
+      radius: 0
+      text_color: 0xFFFFFF
+      width: 100%
+      height: 100%
+
+    - id: f1_page
+      bg_opa: TRANSP
+      border_opa: TRANSP
+      radius: 0
+      text_color: 0xFFFFFF
+      width: 100%
+      height: 100%
+
+    - id: style_line
+      line_color: 0x0000FF
+      line_width: 8
+      line_rounded: true
+    - id: date_style
+      #text_font: nunito_24
+      align: center
+      text_color: 0x333333
+      bg_opa: cover
+      radius: 4
+      pad_all: 2
+
+        ####Header_Footer##########
+    - id: header_footer
+      bg_color: 0x2F8CD8
+      bg_grad_color: 0x005782
+      bg_grad_dir: VER
+      bg_opa: COVER
+      border_width: 0
+      radius: 0
+      pad_all: 0
+      pad_row: 0
+      pad_column: 0
+      border_color: 0x0077b3
+      text_color: 0xFFFFFF
+      width: 100%
+      height: 30
+
+    - id: music_style
+      text_font: montserrat_16
+      text_color: 0x504d6d
+      bg_opa: TRANSP
+    
+    - id: title_style
+      text_font: montserrat_14
+      text_color: 0x101010
+      bg_opa: TRANSP
+    
+    - id: btn_round_style
+      radius: 10
+      bg_opa: COVER
+    
+    - id: spectrum_style
+      bg_opa: TRANSP
+      border_width: 0     
+
+    - id: style_bg_dark
+      bg_color: 0x1a1a1a
+      bg_opa: COVER
+      border_width: 0
+      radius: 0
+      
+    - id: style_card
+      bg_color: 0x2d2d2d
+      bg_opa: COVER
+      border_width: 0
+      radius: 15
+      pad_all: 20
+      
+    - id: style_header
+      bg_color: 0x000000
+      bg_opa: COVER
+      border_width: 0
+      radius: 0
+      pad_all: 0
+      
+    - id: style_button
+      bg_color: 0x444444
+      bg_opa: COVER
+      border_width: 0
+      radius: 25
+      pad_all: 0
+
+  pages:
+      - id: page_home
+        bg_color: color_black
+        widgets:        
+          # Fond d'écran sombre
+          - obj:
+              id: background
+              width: 800
+              height: 480
+              x: 0
+              y: 0
+              bg_opa: TRANSP
+              border_width: 0
+              radius: 0 
+
+          - image:
+              id: update_wallpaper
+              src: Sample
+              width: 800
+              height: 480
+              x: 0
+              y: 0     
+
+          - label:
+              text: "HOME CONTROL"
+              x: 15
+              y: 10
+              text_color: 0xFFFFFF
+              text_font: roboto_32
+              text_align: LEFT
+
+          - label:
+              id: date_label
+              text: "Tuesday, Apr 23"
+              x: 400
+              y: 10
+              text_align: CENTER
+              text_color: 0xFFFFFF
+              text_font: roboto_24
+          - label:
+              id: time_label
+              text: "12:34"
+              x: 650
+              y: 10
+              text_align: CENTER
+              text_color: 0xFFFFFF
+              text_font: roboto_24  
+
+          - label:
+              id: ha_status
+              x: 760
+              y: 10
+              text: "${ha}"
+              text_color: color_blue
+              text_font: icons_36 
+
+          - label:
+              id: alarm_panel_status
+              x: 710
+              y: 10
+              text: "${shield_arming_icon}"
+              text_color: color_blue
+              text_font: mdi_icons_32                                               
+              #text_align: LEFT
+
+          - label:
+              id: weather_temperature_page
+              text: "21.5°"
+              x: 15
+              y: 80
+              text_color: 0xFFAA00
+              text_font: roboto_42
+          - label:
+              id: weather_humidity_page
+              text: "67"
+              x: 110
+              y: 85
+              text_color: 0xFFFFFF
+              text_font: roboto_24
+          - label:
+              text: "${humidity}"
+              text_font: icons_36
+              x: 80
+              y: 85
+              text_color: 0x00AAAA              
+
+          # Boutons menu gauche
+          # Bouton Settings
+          - button:
+              id: btn_settings
+              width: 150
+              height: 45
+              x: 10
+              y: 305
+              bg_color: color_orange
+              bg_opa: COVER
+              radius: 15
+              widgets:
+                - label:
+                    text: "SETTINGS"
+                    x: 40
+                    y: 8
+                    text_color: 0xFFFFFF
+                    text_font: roboto_18
+                    text_align: left
+                - label:
+                    text: "${setting}"
+                    text_align: left
+                    text_color: color_yellow
+                    text_font: mdi36
+              on_click:      
+                then:
+                    - lvgl.page.show: settings_page 
+                    - lambda: |-
+                        ESP_LOGI("PERF", "=== PAGE SWITCH START: %u ms ===", millis());
+                        ESP_LOGI("PERF", "Free heap: %u bytes", esp_get_free_heap_size()); 
+                    - lambda: |-
+                        ESP_LOGI("PERF", "=== PAGE SWITCH END: %u ms ===", millis());
+                        ESP_LOGI("PERF", "Free heap after: %u bytes", esp_get_free_heap_size());                    
+
+          - button:
+              id: btn_P4minicam
+              width: 150
+              height: 45
+              x: 10
+              y: 360
+              bg_color: color_steel_blue
+              bg_opa: COVER
+              radius: 15
+              on_click:      
+                then:
+                  - lvgl.page.show: camera_page 
+              widgets:
+                - label:
+                    text: "MiniCam"
+                    x: 40
+                    y: 8
+                    text_color: 0xFFFFFF
+                    text_font: roboto_18
+                    text_align: left
+                - label:
+                    text: "\U000F07AE"
+                    text_align: left
+                    text_color: color_yellow
+                    text_font: mdi36      
+                      
+          # Bouton Alarm
+          - button:
+              id: btn_alarm
+              width: 150
+              height: 45
+              x: 10
+              y: 420
+              styles: button_menu
+              bg_opa: COVER
+              radius: 15
+              widgets:
+                - label:
+                    text: "ALARM"
+                    x: 40
+                    y: 8
+                    text_color: 0xFFFFFF
+                    text_font: roboto_18
+                    text_align: left
+                - label:
+                    text: "${alarm}"
+                    text_align: left
+                    text_color: color_yellow
+                    text_font: mdi36                         
+              on_press:      
+                then:
+                    - lvgl.page.show: alarm_panel_page 
+                    - lambda: |-
+                        ESP_LOGI("PERF", "=== PAGE SWITCH START: %u ms ===", millis());
+                        ESP_LOGI("PERF", "Free heap: %u bytes", esp_get_free_heap_size()); 
+                    - lambda: |-
+                        ESP_LOGI("PERF", "=== PAGE SWITCH END: %u ms ===", millis());
+                        ESP_LOGI("PERF", "Free heap after: %u bytes", esp_get_free_heap_size());                       
+
+          - button:
+              id: btn_light
+              width: 150
+              height: 45
+              x: 10
+              y: 180
+              bg_color: color_orange
+              bg_opa: COVER
+              radius: 15
+              widgets:
+                - label:
+                    text: "SDIMAGE"
+                    x: 40
+                    y: 8
+                    text_color: 0xFFFFFF
+                    text_font: roboto_18
+                    text_align: left
+                - label:
+                    text: "\U000F02E9"
+                    text_align: left
+                    text_color: color_deep_purple
+                    text_font: mdi36
+                    
+          # Bouton Media Player
+          - button:
+              id: btn_player
+              width: 150
+              height: 45
+              x: 10
+              y: 245
+              bg_color: color_steel_blue
+              bg_opa: COVER
+              radius: 15
+              widgets:
+                - label:
+                    text: "MEDIA"
+                    x: 40
+                    y: 8
+                    text_color: 0xFFFFFF
+                    text_font: roboto_18
+                    text_align: left
+                - label:
+                    text: "\U000F0CB8"
+                    text_align: left
+                    text_color: color_yellow
+                    text_font: mdi36                         
+              on_press:      
+                then:
+                    - lvgl.page.show: media_player_page 
+                    - lambda: |-
+                        ESP_LOGI("PERF", "=== PAGE SWITCH START: %u ms ===", millis());
+                        ESP_LOGI("PERF", "Free heap: %u bytes", esp_get_free_heap_size()); 
+                    - lambda: |-
+                        ESP_LOGI("PERF", "=== PAGE SWITCH END: %u ms ===", millis());
+                        ESP_LOGI("PERF", "Free heap after: %u bytes", esp_get_free_heap_size());
+
+
+
+
+
+
+
+      - id: camera_page
+        bg_color: color_black
+        widgets:
+          - label:
+              id: camera_status_label
+              text: "Camera CSI Active"
+              x: 400
+              y: 180
+              text_color: color_green
+              text_font: roboto_20
+              text_align: center
+          - label:
+              text: "Flux video en cours..."
+              x: 400
+              y: 220
+              text_color: 0xFFFFFF
+              text_font: roboto_16
+              text_align: center
+          - button:
+              id: btn_back_from_camera
+              width: 120
+              height: 50
+              x: 340
+              y: 400
+              bg_color: color_red
+              radius: 15
+              on_click:
+                - lvgl.page.show: page_home
+              widgets:
+                - label:
+                    text: "Retour"
+                    text_color: 0xFFFFFF
+                    text_font: roboto_18
+                    text_align: center
+
+        on_swipe_up:
+          - lambda: 'lv_indev_wait_release(lv_indev_get_act());'
+          - lvgl.page.show: page_home
+          - light.turn_on: 
+              id: backlight
+              flash_length: 50ms 
+   
+      - id: settings_page
+        bg_color: color_slate_blue_gray
+        widgets:
+          - obj:
+              id: backlight_bg
+              x: 15
+              y: 80
+              width: 380
+              height: 90
+              align: TOP_LEFT
+              pad_all: 0
+              bg_color: color_blue
+              bg_opa: 20%
+              border_opa: TRANSP
+              border_width: 0
+              shadow_opa: TRANSP
+              radius: 10
+              widgets:
+                - label:
+                    id: display_backlight_label
+                    x: 15
+                    align: LEFT_MID
+                    text_font: roboto_24
+                    text_color: color_blue
+                    text: "Backlight"
+                - slider:
+                    id: display_backlight_brightness_slider
+                    x: -20
+                    radius: 10
+                    bg_color: color_gray
+                    align: RIGHT_MID
+                    width: 200
+                    height: 50
+                    min_value: 35
+                    max_value: 100
+                    value: 100
+                    indicator:
+                      bg_color: color_deep_orange
+                      radius: 10
+                    knob:
+                      bg_opa: TRANSP
+                    on_release:
+                      then:
+                        - light.turn_on:
+                            id: backlight
+                            brightness: !lambda return int(x)/ 100.0;
+
+          - obj:
+              id: sleep_mode_bg
+              x: 15
+              y: 300
+              width: 380
+              height: 100
+              align: TOP_LEFT
+              pad_all: 8
+              bg_color: color_blue
+              bg_opa: 20%
+              border_opa: TRANSP
+              border_width: 0
+              shadow_opa: TRANSP
+              radius: 10
+              widgets:
+                - label:
+                    id: display_timeout_label
+                    x: 8
+                    align: LEFT_MID
+                    text_font: roboto_24
+                    text_color: color_blue
+                    text: "Sleep mode"
+                
+                # Bouton moins (-)
+                - obj:
+                    id: minus_button_main
+                    x: 155
+                    align: LEFT_MID
+                    width: 70
+                    height: 70
+                    pad_all: 0
+                    bg_opa: transp
+                    border_opa: transp
+                    shadow_opa: TRANSP
+                    widgets:
+                      - obj:
+                          width: 55
+                          height: 55
+                          align: center
+                          clickable: true
+                          radius: 40
+                          pad_all: 0
+                          bg_opa: transp
+                          border_opa: transp
+                          border_width: 0
+                          shadow_width: 6
+                          shadow_spread: 2
+                          shadow_color: color_black
+                          pressed:
+                            bg_color: 0x3A3A4C
+                            shadow_width: 4
+                          on_press:
+                            - number.set:
+                                id: auto_off
+                                value: !lambda |-
+                                  float current = id(auto_off).state;
+                                  if (current > -1) return current - 1;
+                                  return current;
+                          widgets:
+                            - obj:
+                                width: 45
+                                height: 45
+                                align: center
+                                clickable: false
+                                radius: 35
+                                pad_all: 0
+                                bg_opa: transp 
+                                border_opa: transp
+                                shadow_width: 3
+                                shadow_color: 0xFFFFFF
+                                shadow_ofs_x: -3
+                                shadow_ofs_y: -2
+                                shadow_opa: 30%
+                            - obj:
+                                width: 50
+                                height: 50
+                                pad_all: 0
+                                align: center
+                                clickable: false
+                                radius: 40
+                                border_opa: transp
+                                bg_color: color_slate_blue_gray
+                                widgets:
+                                  - label:
+                                      id: minus_label
+                                      y: -2
+                                      align: CENTER
+                                      text_font: roboto_24
+                                      text_color: color_misty_blue
+                                      text: "-"
+                
+                # Affichage valeur actuelle
+                - label:
+                    id: current_timeout_value
+                    x: 225
+                    align: LEFT_MID
+                    width: 60
+                    text_font: roboto_24
+                    text_color: color_white
+                    text_align: CENTER
+                    text: !lambda |-
+                      int timeout = id(auto_off).state;
+                      if (timeout == -1) return "OFF";
+                      return (std::to_string(timeout) + "s").c_str();
+                
+                # Bouton plus (+)
+                - obj:
+                    id: plus_button_main
+                    x: 290
+                    align: LEFT_MID
+                    width: 70
+                    height: 70
+                    pad_all: 0
+                    bg_opa: transp
+                    border_opa: transp
+                    border_width: 0
+                    shadow_opa: TRANSP
+                    widgets:
+                      - obj:
+                          width: 55
+                          height: 55
+                          align: center
+                          clickable: true
+                          radius: 40
+                          pad_all: 0
+                          bg_opa: transp
+                          border_opa: transp
+                          border_width: 0
+                          shadow_width: 6
+                          shadow_spread: 2
+                          shadow_color: color_black
+                          pressed:
+                            bg_color: 0x3A3A4C
+                            shadow_width: 4
+                          on_press:
+                            - number.set:
+                                id: auto_off
+                                value: !lambda |-
+                                  float current = id(auto_off).state;
+                                  if (current < 600) return current + 1;
+                                  return current;
+                          widgets:                
+                            - obj:
+                                width: 45
+                                height: 45
+                                align: center
+                                clickable: false
+                                radius: 35
+                                pad_all: 0
+                                bg_opa: transp 
+                                border_opa: transp
+                                shadow_width: 3
+                                shadow_color: 0xFFFFFF
+                                shadow_ofs_x: -3
+                                shadow_ofs_y: -2
+                                shadow_opa: 30%
+                            - obj:
+                                width: 50
+                                height: 50
+                                pad_all: 0
+                                align: center
+                                clickable: false
+                                radius: 40
+                                border_opa: transp
+                                bg_color: color_slate_blue_gray
+                                widgets:
+                                  - label:
+                                      id: plus_label
+                                      y: -2
+                                      align: center
+                                      text_font: roboto_24
+                                      text_color: color_misty_blue
+                                      text: "+"
+
+
+          # Section SYSTEM INFO
+          - obj:
+              id: system_info_section
+              width: 220
+              height: 180
+              x: 560
+              y: 50
+              bg_color: 0x444444
+              bg_opa: COVER
+              radius: 15
+              widgets:
+                - obj:
+                    id: system_info_container
+                    x: 0
+                    y: 0
+                    width: 200
+                    height: 160
+                    align: TOP_LEFT
+                    pad_all: 0
+                    bg_color: 0x444444
+                    bg_opa: 20%
+                    border_opa: TRANSP
+                    radius: 10
+                    widgets:
+                      # SRAM memory
+                      - obj:
+                          y: 8
+                          width: 180
+                          height: 35
+                          align: TOP_MID
+                          bg_opa: TRANSP
+                          pad_all: 0
+                          border_opa: TRANSP
+                          widgets:
+                            - label:
+                                align: TOP_LEFT
+                                text: "SRAM:"
+                                text_font: roboto_16
+                                text_color: color_white
+                            - label:
+                                id: sram_memory_label
+                                align: TOP_RIGHT
+                                text: "0/512 KB"
+                                text_font: roboto_16
+                                text_color: color_green
+                            - bar:
+                                id: sram_memory_bar
+                                y: 20
+                                width: 170
+                                height: 8
+                                align: TOP_MID
+                                pad_all: 0
+                                min_value: 0
+                                max_value: 100
+                                value: 0
+                                bg_color: color_gray
+                                bg_opa: 50%
+                                indicator: 
+                                  bg_color: color_green
+
+                      # PSRAM memory
+                      - obj:
+                          y: 48
+                          width: 180
+                          height: 35
+                          align: TOP_MID
+                          bg_opa: TRANSP
+                          pad_all: 0
+                          border_opa: TRANSP
+                          widgets:
+                            - label:
+                                align: TOP_LEFT
+                                text: "PSRAM:"
+                                text_font: roboto_16
+                                text_color: color_white
+                            - label:
+                                id: psram_memory_label
+                                align: TOP_RIGHT
+                                text: "0/8 MB"
+                                text_font: roboto_16
+                                text_color: color_blue
+                            - bar:
+                                id: psram_memory_bar
+                                y: 20
+                                width: 170
+                                height: 8
+                                align: TOP_MID
+                                pad_all: 0
+                                min_value: 0
+                                max_value: 100
+                                value: 0
+                                bg_color: color_gray
+                                bg_opa: 50%
+                                indicator:
+                                  bg_color: color_blue
+
+                      # Chip temperature
+                      - obj:
+                          y: 88
+                          width: 180
+                          height: 20
+                          align: TOP_MID
+                          pad_all: 0
+                          bg_opa: TRANSP
+                          border_opa: TRANSP
+                          widgets:
+                            - label:
+                                align: LEFT_MID
+                                text: "CPU Temp:"
+                                text_font: roboto_16
+                                text_color: color_white
+                            - label:
+                                id: chip_temperature_label
+                                align: RIGHT_MID
+                                text: "0°C"
+                                text_font: roboto_16
+                                text_color: color_yellow
+
+                      # WiFi signal
+                      - obj:
+                          y: 113
+                          width: 180
+                          height: 20
+                          align: TOP_MID
+                          pad_all: 0
+                          bg_opa: TRANSP
+                          border_opa: TRANSP
+                          widgets:
+                            - label:
+                                align: LEFT_MID
+                                text: "WiFi:"
+                                text_font: roboto_16
+                                text_color: color_white
+                            - label:
+                                id: wifi_signal_label
+                                align: RIGHT_MID
+                                text: "0 dBm"
+                                text_font: roboto_16
+                                text_color: color_white
+
+                      # IP Address
+                      - obj:
+                          y: 138
+                          width: 180
+                          height: 20
+                          align: TOP_MID
+                          pad_all: 0
+                          bg_opa: TRANSP
+                          border_opa: TRANSP
+                          widgets:
+                            - label:
+                                align: LEFT_MID
+                                text: "IP:"
+                                text_font: roboto_16
+                                text_color: color_white
+                            - label:
+                                id: ip_address_label
+                                align: RIGHT_MID
+                                text: "192.168.3.3"
+                                text_font: roboto_16
+                                text_color: color_white                                      
+
+        on_swipe_up:
+          - lambda: 'lv_indev_wait_release(lv_indev_get_act());'
+          - lvgl.page.show: page_home
+          - light.turn_on: 
+              id: backlight
+              flash_length: 50ms 
+              
+      - id: page_heure
+        bg_color: color_slate_blue_gray
+        widgets:
+          - obj:
+              height: 280
+              width: 280
+              align: center
+              pad_all: 3
+              bg_color: Black
+              border_width: 2
+              border_color: white
+              radius: 140
+              widgets:
+              # Cadran principal avec graduation
+              - meter:
+                  height: 100%
+                  width: 100%
+                  align: center
+                  bg_color: Black
+                  scales:
+                    # Graduation des minutes (petites marques)
+                    - ticks:
+                        width: 1
+                        count: 60
+                        length: 6
+                        color: white
+                      range_from: 0
+                      range_to: 60
+                      angle_range: 360
+                      rotation: 270
+                    
+                    # Graduation des heures (grandes marques)
+                    - ticks:
+                        width: 2
+                        count: 12
+                        length: 15
+                        color: white
+                      range_from: 0
+                      range_to: 12
+                      angle_range: 360
+                      rotation: 270
+                      
+                    # Échelle spécifique pour l'aiguille des heures (0-720 pour 12h * 60min)
+                    - range_from: 0
+                      range_to: 720
+                      angle_range: 360
+                      rotation: 270
+                      indicators:
+                        - line:
+                            id: hour_hand
+                            width: 5
+                            color: white
+                            r_mod: -45
+                            
+                    # Aiguille des minutes
+                    - range_from: 0
+                      range_to: 60
+                      angle_range: 360
+                      rotation: 270
+                      indicators:
+                        - line:
+                            id: minute_hand
+                            width: 3
+                            color: white
+                            r_mod: -25
+                            
+                    # Aiguille des secondes
+                    - range_from: 0
+                      range_to: 60
+                      angle_range: 360
+                      rotation: 270
+                      indicators:
+                        - line:
+                            id: second_hand
+                            width: 2
+                            color: red
+                            r_mod: -15
+
+              # Chiffres des heures (12, 3, 6, 9)
+              - label:
+                  id: hour_12
+                  text: "12"
+                  align: center
+                  x: 0
+                  y: -110
+                  text_font: roboto_20
+                  text_color: white
+                  
+              - label:
+                  id: hour_3
+                  text: "3"
+                  align: center
+                  x: 110
+                  y: 0
+                  text_font: roboto_20
+                  text_color: white
+                  
+              - label:
+                  id: hour_6
+                  text: "6"
+                  align: center
+                  x: 0
+                  y: 110
+                  text_font: roboto_20
+                  text_color: white
+                  
+              - label:
+                  id: hour_9
+                  text: "9"
+                  align: center
+                  x: -110
+                  y: 0
+                  text_font: roboto_20
+                  text_color: white
+
+              # Autres chiffres des heures
+              - label:
+                  id: hour_1
+                  text: "1"
+                  align: center
+                  x: 55
+                  y: -95
+                  text_font: roboto_16
+                  text_color: white
+                  
+              - label:
+                  id: hour_2
+                  text: "2"
+                  align: center
+                  x: 95
+                  y: -55
+                  text_font: roboto_16
+                  text_color: white
+                  
+              - label:
+                  id: hour_4
+                  text: "4"
+                  align: center
+                  x: 95
+                  y: 55
+                  text_font: roboto_16
+                  text_color: white
+                  
+              - label:
+                  id: hour_5
+                  text: "5"
+                  align: center
+                  x: 55
+                  y: 95
+                  text_font: roboto_16
+                  text_color: white
+                  
+              - label:
+                  id: hour_7
+                  text: "7"
+                  align: center
+                  x: -55
+                  y: 95
+                  text_font: roboto_16
+                  text_color: white
+                  
+              - label:
+                  id: hour_8
+                  text: "8"
+                  align: center
+                  x: -95
+                  y: 55
+                  text_font: roboto_16
+                  text_color: white
+                  
+              - label:
+                  id: hour_10
+                  text: "10"
+                  align: center
+                  x: -95
+                  y: -55
+                  text_font: roboto_16
+                  text_color: white
+                  
+              - label:
+                  id: hour_11
+                  text: "11"
+                  align: center
+                  x: -55
+                  y: -95
+                  text_font: roboto_16
+                  text_color: white
+
+              # Centre de la montre
+              - obj:
+                  height: 12
+                  width: 12
+                  align: center
+                  bg_color: white
+                  radius: 6
+                  border_width: 0                              
+
+          - button:
+              x: 15
+              y: 400
+              width: 60
+              height: 60
+              align: TOP_LEFT
+              bg_color: color_blue
+              border_opa: TRANSP
+              shadow_opa: TRANSP
+              radius: 10
+              widgets:
+                - label:
+                    align: CENTER
+                    text_font: icons_24
+                    text_color: color_white
+                    text: "${exit_icon}"
+              on_click:
+                - lvgl.page.show: page_home
+
+      - id: listening_page
+        bg_color: color_black
+        widgets:
+          - image:
+              align: CENTER
+              src: casita_listening
+
+        on_swipe_up:
+          - lambda: 'lv_indev_wait_release(lv_indev_get_act());'
+          - lvgl.page.show: page_home
+          - light.turn_on: 
+              id: backlight
+              flash_length: 100ms 
+
+      - id: media_player_page
+        bg_color: color_slate_blue_gray
+        widgets:
+          # Bouton principal Play/Pause
+          - obj:
+              id: circular_button_obj
+              width: 150
+              height: 150
+              x: 325
+              y: 165
+              clickable: true
+              radius: 75
+              bg_opa: transp
+              border_opa: transp
+              border_width: 0
+              shadow_width: 28
+              shadow_spread: 3
+              shadow_color: 0x000000
+              pressed:
+                bg_color: 0x3A3A4C
+                shadow_width: 6
+              on_click:
+                - if:
+                    condition:
+                      lambda: |-
+                        return id(media_player_esphome).state == "idle";
+                    then:
+                      - lvgl.obj.update:
+                          id: circular_button_obj
+                          shadow_color: color_sky_blue
+                      - lvgl.label.update:
+                          id: label_play
+                          text_color: color_sky_blue
+                          text: "${pause_icon}"
+                      - lvgl.label.update:
+                          id: station_name_label
+                          text_color: color_sky_blue
+                      # Jouer la station actuelle
+                      - lambda: |-
+                          int current_station = id(current_radio_station);
+                          std::string urls[] = {
+                            "https://icecast.funradio.fr/fun-1-44-128?listen=webGJmqBU59boQ7rZDjrGO5e4",
+                            "http://icecast.skyrock.net/s/natio_mp3_128k",
+                            "https://live.sudradio.fr/sudradio-mp3-128",
+                            "https://icecast.rtl.fr/rtl2-1-44-128?listen=webGJmqBU59boQ7rZDjrGO5e4",
+                            "https://icecast.radiofrance.fr/mouvrnb-hifi.aac",
+                            "https://streaming.nrjaudio.fm/oumvmk8fnozc"
+                          };
+                          if (current_station >= 0 && current_station < 4) {
+                            id(current_station_url).publish_state(urls[current_station]);
+                          }
+                      - homeassistant.action:
+                          action: media_player.play_media
+                          data:
+                            entity_id: "${media_player_entity}"
+                            media_content_type: music
+                            media_content_id: !lambda 'return id(current_station_url).state;'
+                    else:
+                      - lvgl.obj.update:
+                          id: circular_button_obj
+                          shadow_color: 0x000000
+                      - lvgl.label.update:
+                          id: label_play
+                          text_color: color_steel_blue
+                          text: "${play_icon}"
+                      - lvgl.label.update:
+                          id: station_name_label
+                          text_color: color_misty_blue
+                      - homeassistant.action:
+                          action: media_player.media_stop
+                          data:
+                            entity_id: "${media_player_entity}"
+
+          # Effets visuels du bouton principal
+          - obj:
+              id: circular_button_obj1
+              width: 135
+              height: 135
+              x: 332
+              y: 172
+              clickable: false
+              radius: 72
+              bg_opa: transp 
+              border_opa: transp
+              shadow_width: 8
+              shadow_color: 0xFFFFFF
+              shadow_ofs_x: -6
+              shadow_ofs_y: -3
+              shadow_opa: 30%
+          - obj:
+              id: circular_button_obj2
+              width: 135
+              height: 135
+              x: 332
+              y: 172
+              clickable: false
+              radius: 72
+              bg_opa: transp 
+              border_opa: transp
+              shadow_width: 15
+              shadow_color: 0x000000
+              shadow_ofs_x: 6
+              shadow_ofs_y: 3
+          - obj:
+              id: circular_button_obj3
+              width: 140
+              height: 140
+              x: 330
+              y: 170
+              clickable: false
+              radius: 72
+              border_opa: transp
+              bg_color: color_slate_blue_gray
+              widgets:
+                - label:
+                    id: label_play
+                    align: CENTER
+                    text_color: color_misty_blue
+                    text_font: icons_48
+                    text: "${play_icon}"
+
+          # Bouton Station Précédente
+          - obj:
+              id: previous_button_obj
+              width: 90
+              height: 90
+              x: 240
+              y: 240
+              clickable: true
+              radius: 45
+              bg_opa: transp
+              border_opa: transp
+              border_width: 0
+              shadow_width: 16
+              shadow_spread: 2
+              shadow_color: 0x000000
+              pressed:
+                bg_color: 0x3A3A4C
+                shadow_width: 4
+              on_press:
+                - lvgl.obj.update:
+                    id: previous_button_obj
+                    shadow_color: color_sky_blue
+                - lvgl.label.update:
+                    id: label_previous
+                    text_color: color_sky_blue
+              on_release:
+                - lvgl.obj.update:
+                    id: previous_button_obj
+                    shadow_color: 0x000000
+                - lvgl.label.update:
+                    id: label_previous
+                    text_color: color_misty_blue
+              on_click:
+                - lambda: |-
+                    int current = id(current_radio_station);
+                    current = (current - 1 + 6) % 6;  
+                    id(current_radio_station) = current;
+                    std::string names[] = {"Fun Radio", "Skyrock", "Sud Radio", "RTL2", "Radio France", "NRJ"};
+                    lv_label_set_text(id(station_name_label), names[current].c_str());
+                    std::string urls[] = {
+                      "https://icecast.funradio.fr/fun-1-44-128?listen=webGJmqBU59boQ7rZDjrGO5e4",
+                      "http://icecast.skyrock.net/s/natio_mp3_128k",
+                      "https://live.sudradio.fr/sudradio-mp3-128",
+                      "https://icecast.rtl.fr/rtl2-1-44-128?listen=webGJmqBU59boQ7rZDjrGO5e4",
+                      "https://icecast.radiofrance.fr/mouvrnb-hifi.aac",
+                      "https://streaming.nrjaudio.fm/oumvmk8fnozc"
+                    };
+                    id(current_station_url).publish_state(urls[current]);
+                - if:
+                    condition:
+                      lambda: |-
+                        return id(media_player_esphome).state != "idle";
+                    then:
+                      - homeassistant.action:
+                          action: media_player.play_media
+                          data:
+                            entity_id: "${media_player_entity}"
+                            media_content_type: music
+                            media_content_id: !lambda 'return id(current_station_url).state;'
+
+          # Effets visuels bouton précédent
+          - obj:
+              id: previous_button_obj1
+              width: 80
+              height: 80
+              x: 245
+              y: 245
+              clickable: false
+              radius: 42
+              bg_opa: transp 
+              border_opa: transp
+              shadow_width: 4
+              shadow_color: 0xFFFFFF
+              shadow_ofs_x: -4
+              shadow_ofs_y: -2
+              shadow_opa: 30%
+          - obj:
+              id: previous_button_obj2
+              width: 80
+              height: 80
+              x: 245
+              y: 245
+              clickable: false
+              radius: 42
+              bg_opa: transp 
+              border_opa: transp
+              shadow_width: 9
+              shadow_color: 0x000000
+              shadow_ofs_x: 4
+              shadow_ofs_y: 2
+          - obj:
+              id: previous_button_obj3
+              width: 85
+              height: 85
+              x: 242
+              y: 242
+              clickable: false
+              radius: 42
+              border_opa: transp
+              bg_color: color_slate_blue_gray
+              widgets:
+                - label:
+                    id: label_previous
+                    align: CENTER
+                    text_color: color_misty_blue
+                    text_font: icons_38
+                    text: "${back_step_icon}"
+
+          # Bouton Station Suivante
+          - obj:
+              id: next_button_obj
+              width: 90
+              height: 90
+              x: 470
+              y: 240
+              clickable: true
+              radius: 45
+              bg_opa: transp
+              border_opa: transp
+              border_width: 0
+              shadow_width: 16
+              shadow_spread: 2
+              shadow_color: 0x000000
+              pressed:
+                bg_color: 0x3A3A4C
+                shadow_width: 4
+              on_press:
+                - lvgl.obj.update:
+                    id: next_button_obj
+                    shadow_color: color_sky_blue
+                - lvgl.label.update:
+                    id: label_next
+                    text_color: color_sky_blue
+              on_release:
+                - lvgl.obj.update:
+                    id: next_button_obj
+                    shadow_color: 0x000000
+                - lvgl.label.update:
+                    id: label_next
+                    text_color: color_misty_blue
+              on_click:
+                - lambda: |-
+                    int current = id(current_radio_station);
+                    current = (current + 1) % 6;
+                    id(current_radio_station) = current;
+                    std::string names[] = {"Fun Radio", "Skyrock", "Sud Radio", "RTL2", "Radio France", "NRJ"};
+                    lv_label_set_text(id(station_name_label), names[current].c_str());
+                    std::string urls[] = {
+                      "https://icecast.funradio.fr/fun-1-44-128?listen=webGJmqBU59boQ7rZDjrGO5e4",
+                      "http://icecast.skyrock.net/s/natio_mp3_128k",
+                      "https://live.sudradio.fr/sudradio-mp3-128",
+                      "https://icecast.rtl.fr/rtl2-1-44-128?listen=webGJmqBU59boQ7rZDjrGO5e4",
+                      "https://icecast.radiofrance.fr/mouvrnb-hifi.aac",
+                      "https://streaming.nrjaudio.fm/oumvmk8fnozc"
+                    };
+                    id(current_station_url).publish_state(urls[current]);
+                - if:
+                    condition:
+                      lambda: |-
+                        return id(media_player_esphome).state != "idle";
+                    then:
+                      - homeassistant.action:
+                          action: media_player.play_media
+                          data:
+                            entity_id: "${media_player_entity}"
+                            media_content_type: music
+                            media_content_id: !lambda 'return id(current_station_url).state;'
+
+          # Effets visuels bouton suivant
+          - obj:
+              id: next_button_obj1
+              width: 80
+              height: 80
+              x: 475
+              y: 245
+              clickable: false
+              radius: 42
+              bg_opa: transp 
+              border_opa: transp
+              shadow_width: 4
+              shadow_color: 0xFFFFFF
+              shadow_ofs_x: -4
+              shadow_ofs_y: -2
+              shadow_opa: 30%
+          - obj:
+              id: next_button_obj2
+              width: 80
+              height: 80
+              x: 475
+              y: 245
+              clickable: false
+              radius: 42
+              bg_opa: transp 
+              border_opa: transp
+              shadow_width: 9
+              shadow_color: 0x000000
+              shadow_ofs_x: 4
+              shadow_ofs_y: 2
+          - obj:
+              id: next_button_obj3
+              width: 85
+              height: 85
+              x: 472
+              y: 242
+              clickable: false
+              radius: 42
+              border_opa: transp
+              bg_color: color_slate_blue_gray
+              widgets:
+                - label:
+                    id: label_next
+                    align: CENTER
+                    text_color: color_misty_blue
+                    text_font: icons_38
+                    text: "${forward_step_icon}"
+
+          # Contrôle du volume
+          - obj:
+              y: 380
+              width: 420
+              height: 70
+              align: TOP_MID
+              bg_color: color_slate_blue_gray
+              bg_opa: 20%
+              border_opa: TRANSP
+              shadow_opa: TRANSP
+              radius: 10
+              widgets:
+                - slider:
+                    id: media_player_volume_slider
+                    bg_color: color_slate_blue_gray
+                    bg_opa: 0%
+                    border_opa: 0%
+                    shadow_opa: 0%
+                    align: RIGHT_MID
+                    x: -75
+                    width: 270
+                    height: 15
+                    min_value: 0
+                    max_value: 100
+                    indicator:
+                      shadow_color: color_sky_blue
+                    knob:
+                      bg_color: color_misty_blue
+                    on_value:
+                      - lvgl.label.update:
+                          id: media_player_volume_label
+                          text: !lambda 'return str_sprintf("%.0f%%", x);'
+                    on_release:
+                      - homeassistant.action:
+                          action: media_player.volume_set
+                          data:
+                            entity_id: "${media_player_entity}"
+                            volume_level: !lambda 'return float(x) / 100.0;'
+                - label:
+                    id: media_player_volume_label
+                    align: RIGHT_MID
+                    x: -8
+                    shadow_color: color_sky_blue
+                    text_color: color_steel_blue
+                    text_font: nunito_28
+                    text: "0%"
+
+          # Affichage de la station actuelle
+          - obj:
+              x: -15
+              y: 15
+              width: 225
+              height: 90
+              align: TOP_RIGHT
+              bg_color: color_steel_blue
+              bg_opa: 20%
+              border_opa: TRANSP
+              border_width: 0
+              shadow_opa: TRANSP
+              radius: 10
+              widgets:
+                - label:
+                    id: station_name_label
+                    height: 30
+                    width: 195
+                    long_mode: DOT
+                    y: 15
+                    align: CENTER
+                    shadow_color: color_sky_blue
+                    text_font: nunito_28
+                    text: "Fun Radio"
+                - label:
+                    id: media_player_artist_label
+                    height: 20
+                    width: 195
+                    long_mode: DOT
+                    y: -22
+                    align: CENTER
+                    text_color: color_mint
+                    text_font: nunito_18
+                    text: "Radio Station"
+
+          - obj:
+              x: 15
+              y: 15
+              width: 225
+              height: 90
+              align: TOP_LEFT
+              bg_color: color_steel_blue
+              bg_opa: 20%
+              border_opa: TRANSP
+              border_width: 0
+              shadow_opa: TRANSP
+              radius: 10
+              widgets:
+                - label:
+                    id: music_title_label
+                    height: 30
+                    width: 195
+                    long_mode: DOT
+                    y: 15
+                    align: CENTER
+                    text_color: color_misty_blue
+                    text_font: nunito_28
+                    text: "Title"
+                - label:
+                    id: music_artist_label
+                    height: 20
+                    width: 195
+                    long_mode: DOT
+                    y: -22
+                    align: CENTER
+                    text_color: color_mint
+                    text_font: nunito_18
+                    text: "Artist"
+
+        on_swipe_up:
+          - lambda: 'lv_indev_wait_release(lv_indev_get_act());'
+          - lvgl.page.show: page_home
+          - light.turn_on: 
+              id: backlight
+              flash_length: 50ms   
+
+###############################################################################################################################################################################################
+
+      - id: alarm_panel_page
+        bg_color: color_slate_blue_gray
+        widgets:
+
+          - obj:
+              id: alarm_main_view
+              x: 0
+              y: 0
+              width: 800
+              height: 480
+              align: TOP_LEFT
+              bg_opa: transp
+              border_opa: transp
+              widgets:
+                # Zone de l'alarme à gauche (réduite)
+                - obj:
+                    id: alarm_panel_state_bg
+                    x: 20
+                    y: 20
+                    width: 480
+                    height: 80
+                    pad_all: 0
+                    align: TOP_LEFT
+                    bg_color: color_steel_blue
+                    bg_opa: 20%
+                    border_opa: TRANSP
+                    border_width: 0
+                    shadow_opa: TRANSP
+                    radius: 10
+                    widgets:
+                      - obj:
+                          id: alarm_panel_state_icon_bg
+                          x: 20
+                          align: LEFT_MID
+                          width: 60
+                          height: 60
+                          radius: 30
+                          pad_all: 0
+                          bg_color: color_blue
+                          bg_opa: 60%
+                          shadow_opa: transp
+                          border_opa: transp
+                          border_width: 0
+
+                      - label:
+                          id: alarm_panel_state_icon
+                          x: 35
+                          align: LEFT_MID
+                          text_font: mdi_icons_30
+                          text_color: color_green
+                          text: "${shield_disarm_icon}"
+
+                      - label:
+                          x: 100
+                          id: alarm_panel_state_text
+                          align: LEFT_MID
+                          text_font: nunito_20
+                          text_color: color_misty_blue
+                          text: " "
+                
+                - obj:
+                    id: alarm_panel_state_control
+                    hidden: false
+                    x: 20
+                    y: 120
+                    width: 480
+                    height: 320
+                    align: TOP_LEFT
+                    bg_color: color_steel_blue
+                    bg_opa: 20%
+                    border_opa: TRANSP
+                    shadow_opa: TRANSP
+                    radius: 10
+                    widgets:
+                      # Bouton principal désarmé (centré et plus petit)
+                      - obj:
+                          id: alarm_panel_button_disarmed
+                          width: 200
+                          height: 200
+                          align: center
+                          pad_all: 0
+                          bg_opa: transp
+                          shadow_opa: transp
+                          border_opa: transp
+                          widgets:
+                            - obj:
+                                width: 160
+                                height: 160
+                                align: center
+                                clickable: true
+                                radius: 80
+                                bg_opa: transp
+                                border_opa: transp
+                                border_width: 0
+                                shadow_width: 25
+                                shadow_spread: 4
+                                shadow_color: color_black
+                                pressed:
+                                  bg_color: 0x3A3A4C
+                                  shadow_width: 8
+                                on_press:
+                                  - lambda: |-
+                                      id(alarm_panel_pending_action) = std::string("disarm");
+                                  - lvgl.widget.show: alarm_panel_keypad_page
+                                  - lvgl.widget.hide: alarm_panel_state_bg
+                                  - lvgl.widget.hide: alarm_panel_state_control
+                            - obj:
+                                width: 152
+                                height: 152
+                                align: center
+                                clickable: false
+                                radius: 80
+                                bg_opa: transp 
+                                border_opa: transp
+                                shadow_width: 8
+                                shadow_color: 0xFFFFFF
+                                shadow_ofs_x: -6
+                                shadow_ofs_y: -4
+                                shadow_opa: 30%
+
+                            - obj:
+                                width: 152
+                                height: 152
+                                align: center
+                                clickable: false
+                                radius: 80
+                                bg_opa: transp 
+                                border_opa: transp
+                                shadow_width: 8
+                                shadow_color: 0x000000
+                                shadow_ofs_x: 6
+                                shadow_ofs_y: 4
+
+                            - obj:
+                                width: 156
+                                height: 156
+                                align: center
+                                clickable: false
+                                radius: 80
+                                border_opa: transp
+                                bg_color: color_slate_blue_gray
+                                widgets:
+                                  - label:
+                                      id: alarm_panel_state_btn_disarmed
+                                      align: center
+                                      text_font: mdi_icons_45
+                                      text_color: color_steel_blue
+                                      text: "${shield_disarm_icon}"
+
+                      # Boutons d'armement repositionnés en plus petit
+                      - obj:
+                          id: alarm_panel_button_home
+                          hidden: true
+                          width: 110
+                          height: 110
+                          x: -80
+                          y: -70
+                          align: center
+                          pad_all: 0
+                          bg_opa: transp
+                          shadow_opa: transp
+                          border_opa: transp
+                          widgets:
+                            - obj:
+                                width: 90
+                                height: 90
+                                align: center
+                                clickable: true
+                                radius: 45
+                                pad_all: 0
+                                bg_opa: transp
+                                border_opa: transp
+                                border_width: 0
+                                shadow_width: 15
+                                shadow_spread: 2
+                                shadow_color: color_black
+                                pressed:
+                                  bg_color: 0x3A3A4C
+                                  shadow_width: 6
+                                on_press:
+                                  - lambda: |-
+                                      id(alarm_panel_pending_action) = std::string("arm_home");
+                                  - lvgl.widget.show: alarm_panel_keypad_page
+                                  - lvgl.widget.hide: alarm_panel_state_bg
+                                  - lvgl.widget.hide: alarm_panel_state_control
+                            - obj:
+                                width: 80
+                                height: 80
+                                align: center
+                                clickable: false
+                                radius: 40
+                                pad_all: 0
+                                bg_opa: transp 
+                                border_opa: transp
+                                shadow_width: 4
+                                shadow_color: 0xFFFFFF
+                                shadow_ofs_x: -4
+                                shadow_ofs_y: -2
+                                shadow_opa: 30%
+
+                            - obj:
+                                width: 80
+                                height: 80
+                                align: center
+                                clickable: false
+                                radius: 40
+                                pad_all: 0
+                                bg_opa: transp 
+                                border_opa: transp
+                                shadow_width: 4
+                                shadow_color: 0x000000
+                                shadow_ofs_x: 4
+                                shadow_ofs_y: 2
+
+                            - obj:
+                                width: 85
+                                height: 85
+                                pad_all: 0
+                                align: center
+                                clickable: false
+                                radius: 45
+                                border_opa: transp
+                                bg_color: color_slate_blue_gray
+                                widgets:
+                                  - label:
+                                      id: alarm_panel_state_btn_home
+                                      align: center
+                                      text_font: mdi_icons_35
+                                      text_color: color_steel_blue
+                                      text: "${shield_home_icon}"
+
+                      - obj:
+                          id: alarm_panel_button_away
+                          hidden: true
+                          width: 110
+                          height: 110
+                          x: 80
+                          y: -70
+                          align: center
+                          pad_all: 0
+                          bg_opa: transp
+                          shadow_opa: transp
+                          border_opa: transp
+                          widgets:
+                            - obj:
+                                width: 90
+                                height: 90
+                                align: center
+                                clickable: true
+                                radius: 45
+                                pad_all: 0
+                                bg_opa: transp
+                                border_opa: transp
+                                border_width: 0
+                                shadow_width: 15
+                                shadow_spread: 2
+                                shadow_color: color_black
+                                pressed:
+                                  bg_color: 0x3A3A4C
+                                  shadow_width: 6
+                                on_press:
+                                  - lambda: |-
+                                      id(alarm_panel_pending_action) = std::string("arm_away");
+                                  - lvgl.widget.show: alarm_panel_keypad_page
+                                  - lvgl.widget.hide: alarm_panel_state_bg
+                                  - lvgl.widget.hide: alarm_panel_state_control
+                            - obj:
+                                width: 80
+                                height: 80
+                                align: center
+                                clickable: false
+                                radius: 40
+                                pad_all: 0
+                                bg_opa: transp 
+                                border_opa: transp
+                                shadow_width: 4
+                                shadow_color: 0xFFFFFF
+                                shadow_ofs_x: -4
+                                shadow_ofs_y: -2
+                                shadow_opa: 30%
+
+                            - obj:
+                                width: 80
+                                height: 80
+                                align: center
+                                clickable: false
+                                radius: 40
+                                pad_all: 0
+                                bg_opa: transp 
+                                border_opa: transp
+                                shadow_width: 4
+                                shadow_color: 0x000000
+                                shadow_ofs_x: 4
+                                shadow_ofs_y: 2
+
+                            - obj:
+                                width: 85
+                                height: 85
+                                pad_all: 0
+                                align: center
+                                clickable: false
+                                radius: 45
+                                border_opa: transp
+                                bg_color: color_slate_blue_gray
+                                widgets:
+                                  - label:
+                                      id: alarm_panel_state_btn_away
+                                      align: center
+                                      text_font: mdi_icons_35
+                                      text_color: color_steel_blue
+                                      text: "${shield_away_icon}"
+
+                      - obj:
+                          id: alarm_panel_button_night
+                          hidden: true
+                          width: 110
+                          height: 110
+                          x: -80
+                          y: 70
+                          align: center
+                          pad_all: 0
+                          bg_opa: transp
+                          shadow_opa: transp
+                          border_opa: transp
+                          widgets:
+                            - obj:
+                                width: 90
+                                height: 90
+                                align: center
+                                clickable: true
+                                radius: 45
+                                pad_all: 0
+                                bg_opa: transp
+                                border_opa: transp
+                                border_width: 0
+                                shadow_width: 15
+                                shadow_spread: 2
+                                shadow_color: color_black
+                                pressed:
+                                  bg_color: 0x3A3A4C
+                                  shadow_width: 6
+                                on_press:
+                                  - lambda: |-
+                                      id(alarm_panel_pending_action) = std::string("arm_night");
+                                  - lvgl.widget.show: alarm_panel_keypad_page
+                                  - lvgl.widget.hide: alarm_panel_state_bg
+                                  - lvgl.widget.hide: alarm_panel_state_control
+                            - obj:
+                                width: 80
+                                height: 80
+                                align: center
+                                clickable: false
+                                radius: 40
+                                pad_all: 0
+                                bg_opa: transp 
+                                border_opa: transp
+                                shadow_width: 4
+                                shadow_color: 0xFFFFFF
+                                shadow_ofs_x: -4
+                                shadow_ofs_y: -2
+                                shadow_opa: 30%
+
+                            - obj:
+                                width: 80
+                                height: 80
+                                align: center
+                                clickable: false
+                                radius: 40
+                                pad_all: 0
+                                bg_opa: transp 
+                                border_opa: transp
+                                shadow_width: 4
+                                shadow_color: 0x000000
+                                shadow_ofs_x: 4
+                                shadow_ofs_y: 2
+
+                            - obj:
+                                width: 85
+                                height: 85
+                                pad_all: 0
+                                align: center
+                                clickable: false
+                                radius: 45
+                                border_opa: transp
+                                bg_color: color_slate_blue_gray
+                                widgets:
+                                  - label:
+                                      id: alarm_panel_state_btn_night
+                                      align: center
+                                      text_font: mdi_icons_35
+                                      text_color: color_steel_blue
+                                      text: "${shield_night_icon}"
+
+                      - obj:
+                          id: alarm_panel_button_vacation
+                          hidden: true
+                          width: 110
+                          height: 110
+                          x: 80
+                          y: 70
+                          align: center
+                          pad_all: 0
+                          bg_opa: transp
+                          shadow_opa: transp
+                          border_opa: transp
+                          widgets:
+                            - obj:
+                                width: 90
+                                height: 90
+                                align: center
+                                clickable: true
+                                radius: 45
+                                pad_all: 0
+                                bg_opa: transp
+                                border_opa: transp
+                                border_width: 0
+                                shadow_width: 15
+                                shadow_spread: 2
+                                shadow_color: color_black
+                                pressed:
+                                  bg_color: 0x3A3A4C
+                                  shadow_width: 6
+                                on_press:
+                                  - lambda: |-
+                                      id(alarm_panel_pending_action) = std::string("arm_vacation");
+                                  - lvgl.widget.show: alarm_panel_keypad_page
+                                  - lvgl.widget.hide: alarm_panel_state_bg
+                                  - lvgl.widget.hide: alarm_panel_state_control
+                            - obj:
+                                width: 80
+                                height: 80
+                                align: center
+                                clickable: false
+                                radius: 40
+                                pad_all: 0
+                                bg_opa: transp 
+                                border_opa: transp
+                                shadow_width: 4
+                                shadow_color: 0xFFFFFF
+                                shadow_ofs_x: -4
+                                shadow_ofs_y: -2
+                                shadow_opa: 30%
+
+                            - obj:
+                                width: 80
+                                height: 80
+                                align: center
+                                clickable: false
+                                radius: 40
+                                pad_all: 0
+                                bg_opa: transp 
+                                border_opa: transp
+                                shadow_width: 4
+                                shadow_color: 0x000000
+                                shadow_ofs_x: 4
+                                shadow_ofs_y: 2
+
+                            - obj:
+                                width: 85
+                                height: 85
+                                pad_all: 0
+                                align: center
+                                clickable: false
+                                radius: 45
+                                border_opa: transp
+                                bg_color: color_slate_blue_gray
+                                widgets:
+                                  - label:
+                                      id: alarm_panel_state_btn_vacation
+                                      align: center
+                                      text_font: mdi_icons_35
+                                      text_color: color_steel_blue
+                                      text: "${shield_vacation_icon}"
+
+                # Zone caméra à droite (adaptée)
+                - obj:
+                    id: camera_preview_container
+                    x: 520
+                    y: 20
+                    width: 260
+                    height: 160
+                    align: TOP_LEFT
+                    bg_color: color_steel_blue
+                    bg_opa: 20%
+                    border_opa: TRANSP
+                    radius: 10
+                    clickable: true
+                    on_press:
+                      - lvgl.widget.hide: alarm_main_view
+                      - lvgl.widget.show: camera_fullscreen_view
+                    widgets:
+                      - image:
+                          id: cctv_img_preview
+                          align: CENTER
+                          src: cctv_img
+                          width: 240
+                          height: 120
+                          pad_all: 0
+                          border_width: 0
+                      - label:
+                          align: BOTTOM_MID
+                          y: -8
+                          text_font: nunito_14
+                          text_color: color_misty_blue
+                          text: "Tap for fullscreen"
+
+                # Zone d'informations avec bouton refresh (adaptée)
+                - obj:
+                    id: alarm_panel_bg_name
+                    x: 520
+                    y: 200
+                    width: 260
+                    height: 240
+                    align: TOP_LEFT
+                    bg_color: color_steel_blue
+                    bg_opa: 20%
+                    border_opa: TRANSP
+                    border_width: 0
+                    shadow_opa: TRANSP
+                    radius: 10
+                    widgets:
+                      - button:
+                          align: TOP_MID
+                          x: 0
+                          y: 15
+                          width: 180
+                          height: 40
+                          radius: 20
+                          bg_color: color_steel_blue
+                          bg_opa: 60%
+                          border_width: 1
+                          border_color: color_white
+                          id: refresh_camera_btn
+                          on_click:
+                            - online_image.set_url:
+                                id: cctv_img
+                                url: "${frigate}"
+                          widgets:
+                            - label:
+                                align: CENTER
+                                id: alarm_panel_label_name
+                                text_font: nunito_16
+                                text_color: color_white
+                                text: "Refresh Camera"
+
+          # Vue caméra plein écran (adaptée pour 800x480)
+          - obj:
+              id: camera_fullscreen_view
+              hidden: true
+              x: 0
+              y: 0
+              width: 800
+              height: 480
+              align: TOP_LEFT
+              bg_color: color_black
+              bg_opa: 90%
+              border_opa: transp
+              widgets:
+                # Image plein écran
+                - image:
+                    id: cctv_img_lvgl
+                    align: CENTER
+                    src: cctv_img
+                    width: 720
+                    height: 400
+                    pad_all: 0
+                    border_width: 0
+
+                # Bouton retour (coin supérieur gauche)
+                - button:
+                    align: TOP_LEFT
+                    x: 15
+                    y: 15
+                    width: 70
+                    height: 40
+                    radius: 20
+                    bg_color: color_steel_blue
+                    bg_opa: 80%
+                    border_width: 1
+                    border_color: color_white
+                    on_click:
+                      - lvgl.widget.hide: camera_fullscreen_view
+                      - lvgl.widget.show: alarm_main_view
+                    widgets:
+                      - label:
+                          align: CENTER
+                          text_font: nunito_16 
+                          text: "Exit"
+                          text_color: color_white
+
+                # Bouton refresh (coin supérieur droit)
+                - button:
+                    align: TOP_RIGHT
+                    x: -15
+                    y: 15
+                    width: 100
+                    height: 40
+                    radius: 20
+                    bg_color: color_steel_blue
+                    bg_opa: 80%
+                    border_width: 1
+                    border_color: color_white
+                    id: refresh_camera_btn_fullscreen
+                    on_click:
+                      - online_image.set_url:
+                          id: cctv_img
+                          url: "${frigate}"
+                    widgets:
+                      - label:
+                          align: CENTER
+                          text: "Refresh"
+                          text_font: nunito_16
+                          text_color: color_white
+
+                # Informations overlay (coin inférieur gauche)
+                - obj:
+                    align: BOTTOM_LEFT
+                    x: 15
+                    y: -15
+                    width: 160
+                    height: 50
+                    bg_color: color_steel_blue
+                    bg_opa: 70%
+                    border_opa: transp
+                    radius: 8
+                    widgets:
+                      - label:
+                          id: camera_info_label
+                          align: CENTER
+                          text_font: nunito_14
+                          text_color: color_white
+                          text: "Camera Feed"
+
+          # Clavier d'alarme (adapté pour la nouvelle taille)
+          - obj:
+              id: alarm_panel_keypad_page
+              hidden: true
+              x: 20
+              y: 20
+              width: 480
+              height: 440
+              align: TOP_LEFT
+              bg_color: color_steel_blue
+              bg_opa: 20%
+              border_opa: TRANSP
+              shadow_opa: TRANSP
+              radius: 10
+              widgets:
+                - obj:
+                    width: 440
+                    height: 60
+                    align: top_mid
+                    border_width: 1
+                    border_color: color_steel_blue
+                    pad_all: 0
+                    bg_opa: transp
+                    shadow_opa: transp
+                    radius: 10
+                    widgets:
+                      - label:
+                          id: alarm_panel_keypad_code_label
+                          align: center
+                          text_font: nunito_28
+                          text: "Enter code"
+                          text_color: color_misty_blue
+                          text_align: center
+                - buttonmatrix:
+                    id: alarm_panel_keypad
+                    width: 440
+                    height: 320
+                    pad_all: 0
+                    bg_opa: transp
+                    border_opa: transp
+                    x: 2
+                    y: 35
+                    align: center
+                    items:
+                      bg_opa: transp
+                      border_color: color_steel_blue
+                      border_width: 1
+                      shadow_opa: transp
+                      text_font: montserrat_24
+                      text_color: color_misty_blue
+                      pressed:
+                        bg_color: color_blue
+                        text_color: color_white
+                        border_color: color_blue
+                    rows:
+                      - buttons:
+                          - text: 1
+                            control:
+                              no_repeat: true
+                          - text: 2
+                            control:
+                              no_repeat: true
+                          - text: 3
+                            control:
+                              no_repeat: true
+                      - buttons:
+                          - text: 4
+                            control:
+                              no_repeat: true
+                          - text: 5
+                            control:
+                              no_repeat: true
+                          - text: 6
+                            control:
+                              no_repeat: true
+                      - buttons:
+                          - text: 7
+                            control:
+                              no_repeat: true
+                          - text: 8
+                            control:
+                              no_repeat: true
+                          - text: 9
+                            control:
+                              no_repeat: true
+                      - buttons:
+                          - text: "\uF55A"
+                            key_code: "*"
+                            control:
+                              no_repeat: true
+                          - text: 0
+                            control:
+                              no_repeat: true
+                          - text: "\uF00C"
+                            key_code: "#"
+                            control:
+                              no_repeat: true
+
+        on_swipe_up:
+          - lambda: 'lv_indev_wait_release(lv_indev_get_act());'
+          - lvgl.page.show: page_home
+          - light.turn_on: 
+              id: backlight
+              flash_length: 50ms                 
+
+#################################################################################################################################################################################################                  
+
+
+
+
+
+
+
+
+####################################################################################################################################################################################################
+
+interval:
+  - interval: 60s
+    then:
+      - lambda: |-
+          // Log real memory usage
+          const size_t total_sram = 512 * 1024;
+          const size_t total_psram = 8 * 1024 * 1024;
+          
+          size_t free_sram = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+          size_t used_sram = total_sram - free_sram;
+          
+          size_t free_psram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+          size_t used_psram = total_psram - free_psram;
+          
+          ESP_LOGI("system_info", "SRAM: %u/%u KB used (%.1f%%)", 
+                   used_sram/1024, total_sram/1024, 
+                   (used_sram * 100.0) / total_sram);
+          
+          if (heap_caps_get_total_size(MALLOC_CAP_SPIRAM) > 0) {
+            ESP_LOGI("system_info", "PSRAM: %u/%u MB used (%.1f%%)", 
+                     used_psram/(1024*1024), total_psram/(1024*1024),
+                     (used_psram * 100.0) / total_psram);
+          } else {
+            ESP_LOGI("system_info", "PSRAM: Not available");
+          }
+
+  #- tab5_camera.take_picture: /camera/test.jpg
+  #- interval: 10s
+    #then:
+      #- online_image.set_url:
+          #id: cctv_img
+          #url: "${frigate}"
+key_collector:
+  - source_id: alarm_panel_keypad
+    min_length: 4
+    max_length: 4
+    end_keys: "#"
+    end_key_required: true
+    back_keys: "*"
+    allowed_keys: "0123456789*#"
+    timeout: 5s
+    on_progress:
+      - if:
+          condition:
+            lambda: return (0 != x.compare(std::string{""}));
+          then:
+            - lvgl.label.update:
+                id: alarm_panel_keypad_code_label
+                text: !lambda 'return x.c_str();'
+          else:
+            - lvgl.label.update:
+                id: alarm_panel_keypad_code_label
+                text_font: nunito_36
+                text_color: color_misty_blue
+                text: "Enter code"
+    on_result:      
+      - if:
+          condition:
+            lambda: 'return x == "${pin_code}";'
+          then:
+            # Если код верный, отправляем команду в Home Assistant для снятия с охраны
+
+            - if:
+                condition:
+                  lambda: 'return id(alarm_panel_pending_action) == "disarm";'
+                then:
+                  - homeassistant.action:
+                      action: alarm_control_panel.alarm_disarm
+                      data:
+                        entity_id: "${alarm_panel_entity}"
+                        code: "${pin_code}"
+            - if:
+                condition:
+                  lambda: 'return id(alarm_panel_pending_action) == "arm_home";'
+                then:
+                  - homeassistant.action:
+                      action: alarm_control_panel.alarm_arm_home
+                      data:
+                        entity_id: "${alarm_panel_entity}"
+                        code: "${pin_code}"
+
+            - if:
+                condition:
+                  lambda: 'return id(alarm_panel_pending_action) == "arm_away";'
+                then:
+                  - homeassistant.action:
+                      action: alarm_control_panel.alarm_arm_away
+                      data:
+                        entity_id: "${alarm_panel_entity}"
+                        code: "${pin_code}"
+
+            - if:
+                condition:
+                  lambda: 'return id(alarm_panel_pending_action) == "arm_night";'
+                then:
+                  - homeassistant.action:
+                      action: alarm_control_panel.alarm_arm_night
+                      data:
+                        entity_id: "${alarm_panel_entity}"
+                        code: "${pin_code}"
+
+            - if:
+                condition:
+                  lambda: 'return id(alarm_panel_pending_action) == "arm_vacation";'
+                then:
+                  - homeassistant.action:
+                      action: alarm_control_panel.alarm_arm_vacation
+                      data:
+                        entity_id: "${alarm_panel_entity}"
+                        code: "${pin_code}"
+
+            - lvgl.widget.hide: alarm_panel_keypad_page
+            - lvgl.widget.show: alarm_panel_state_bg
+            - lvgl.widget.show: alarm_panel_state_control
+
