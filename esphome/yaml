@@ -14,9 +14,9 @@ substitutions:
 
   #camera
    
-  frigate1: rtsp://Tapoone:Tapoone132@192.168.1.56:554/stream1 
+  frigate1:  
 
-  frigate: "http://192.168.1.38:8123/local/llmvision/frigate1.jpg"
+  frigate: ""
 
   #wallpaper: "http://192.168.1.38:8123/local/llmvision/abstrac.png"
   #mediaplayer
@@ -133,10 +133,6 @@ esp32:
       enable_idf_experimental_features: yes
 
 
-
-
-
-
 http_request:
   #verify_ssl: false
 
@@ -153,8 +149,6 @@ online_image:
           id: cctv_img_lvgl
           src: cctv_img        
 
-
-
 logger:
   hardware_uart: USB_SERIAL_JTAG
   level: DEBUG
@@ -165,11 +159,11 @@ logger:
 
 api:
   encryption:
-    key: "SPXlsFbRuIwan1L4E96bnzCJiRfnCszLDKqZhRu5/8k="
+    key: ""
 
 ota:
   - platform: esphome
-    password: "f95e7d66cd0255aee677569992f63570"
+    password: ""
 
 wifi:
   ssid: !secret wifi_ssid
@@ -177,7 +171,7 @@ wifi:
 
   ap:
     ssid: "P4Mini Fallback Hotspot"
-    password: "5slstk9DZ6Q2"
+    password: ""
 
 
 time:
@@ -914,7 +908,7 @@ i2s_audio:
     i2s_lrclk_pin: GPIO10
     i2s_bclk_pin: GPIO12
 
-# ES8311 аудио DAC
+
 audio_dac:
   - platform: es8311
     id: es8311_dac
@@ -1077,19 +1071,11 @@ voice_assistant:
 
 
 switch:
-# Усилитель мощности
   - platform: gpio
-    pin: GPIO11 # BSP_POWER_AMP_IO
+    pin: GPIO11 
     name: "Audio Amplifier"
     id: audio_amplifier
     restore_mode: ALWAYS_OFF 
-
-  #- platform: gpio
-    #pin: GPIO45  # ES8311_PA
-    #name: "SD Enable"
-    #restore_mode: ALWAYS_ON
-    #id: SD_enable_switch
-    #inverted: false    
 
 
 #sd_mmc_card:
@@ -1113,15 +1099,6 @@ external_components:
     refresh: 1h
   
 
-  #- source: github://NonaSuomy/esphome@es8311-analog-mic
-    #components: [ es8311 ]
-    #refresh: 0s
-
-
-
-
-
-
 esp32_hosted:
   active_high: true
   variant: ESP32C6
@@ -1134,13 +1111,6 @@ esp32_hosted:
   d3_pin: GPIO17
   slot: 1
  
-
-
-
-  
-
-
-
 
 i2c:
   - id: i2c_bus
