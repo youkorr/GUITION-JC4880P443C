@@ -148,13 +148,9 @@ void SdMmc::setup() {
     
     // Reset complet à chaque tentative
     if (attempt > 1) {
-      esp_vfs_fat_sdcard_unmount("/sdcard", card);
+      esp_vfs_fat_sdcard_unmount("/sdcard", this->card_);
       sdmmc_host_deinit();
       vTaskDelay(pdMS_TO_TICKS(200));
-    }
-
-      
-
       
       // Re-power cycle si pin de contrôle disponible
       if (this->power_ctrl_pin_ != nullptr) {
@@ -251,7 +247,6 @@ void SdMmc::setup() {
   ESP_LOGI(TAG, "GUITION SD Card initialization complete!");
 }
 
-// Reste du code inchangé...
 void SdMmc::write_file(const char *path, const uint8_t *buffer, size_t len) {
   this->write_file(path, buffer, len, "w");
 }
@@ -595,8 +590,8 @@ void SdMmc::read_file_stream(const char *path, size_t offset, size_t chunk_size,
   }
 }
 
-
 #endif
+
 size_t SdMmc::file_size(std::string const &path) { return this->file_size(path.c_str()); }
 
 bool SdMmc::is_directory(std::string const &path) { return this->is_directory(path.c_str()); }
