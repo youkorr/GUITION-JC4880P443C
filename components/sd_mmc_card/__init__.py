@@ -92,21 +92,7 @@ async def to_code(config):
 
     # FIX: Gestion correcte du power_ctrl_pin
     if CONF_POWER_CTRL_PIN in config:
-        power_ctrl = config[CONF_POWER_CTRL_PIN]
-        
-        # Si c'est juste un numéro (ex: GPIO45), utiliser directement gpio_pin_expression
-        if isinstance(power_ctrl, int):
-            # Créer une configuration de pin simple
-            pin_config = pins.gpio_pin_schema({
-                CONF_OUTPUT: True,
-                CONF_PULLUP: False,
-                CONF_PULLDOWN: False,
-            })(power_ctrl)
-            power_ctrl_pin = await cg.gpio_pin_expression(pin_config)
-        else:
-            # Si c'est déjà une configuration complète
-            power_ctrl_pin = await cg.gpio_pin_expression(power_ctrl)
-            
+        power_ctrl_pin = await cg.gpio_pin_expression(config[CONF_POWER_CTRL_PIN])
         cg.add(var.set_power_ctrl_pin(power_ctrl_pin))
 
 # Le reste du code reste identique...
@@ -178,7 +164,6 @@ async def sd_mmc_delete_file_to_code(config, action_id, template_arg, args):
     path_ = await cg.templatable(config[CONF_PATH], args, cg.std_string)
     cg.add(var.set_path(path_))
     return var
-
 
 
 
