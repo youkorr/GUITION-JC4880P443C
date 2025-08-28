@@ -148,9 +148,13 @@ void SdMmc::setup() {
     
     // Reset complet à chaque tentative
     if (attempt > 1) {
-      esp_vfs_fat_sdcard_unmount();  // Version non-dépréciée
+      esp_vfs_fat_sdcard_unmount("/sdcard", card);
       sdmmc_host_deinit();
       vTaskDelay(pdMS_TO_TICKS(200));
+    }
+
+      
+
       
       // Re-power cycle si pin de contrôle disponible
       if (this->power_ctrl_pin_ != nullptr) {
