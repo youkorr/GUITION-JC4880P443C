@@ -81,88 +81,174 @@ void SdMmc::dump_config() {
 #ifdef USE_ESP_IDF
 
 void SdMmc::setup() {
-  // Étape 1 : Configuration du contrôle d'alimentation (GPIO45)
+  ESP_LOGI(TAG, "=== Initializing SD Card for GUITION ESP32-P4 ===");
+  
+  // CRITIQUE: GPIO45 doit être configuré AVANT toute autre opération
   if (this->power_ctrl_pin_ != nullptr) {
-    this->power_ctrl_pin_->setup();  // Configure GPIO45 en sortie
-    this->power_ctrl_pin_->digital_write(true);  // Active l'alimentation (met GPIO45 à HIGH)
-    ESP_LOGI(TAG, "Power control pin activated.");
-    vTaskDelay(pdMS_TO_TICKS(100));  // Attends 100 ms pour stabiliser l'alimentation
+    ESP_LOGI(TAG, "Configuring SD power control on GPIO45...");
+    this->power_ctrl_pin_->setup();
+    this->power_ctrl_pin_->digital_write(false);  // D'abord OFF
+    vTaskDelay(pdMS_TO_TICKS(100));
+    this->power_ctrl_pin_->digital_write(true);   // Puis ON
+    ESP_LOGI(TAG, "SD power enabled via GPIO45");
+    vTaskDelay(pdMS_TO_TICKS(500));  // Délai plus long pour GUITION
   } else {
-    ESP_LOGW(TAG, "No power control pin defined. Ensure the SD card is always powered.");
+    // Configuration manuelle de GPIO45 si power_ctrl_pin n'est pas défini
+    ESP_LOGW(TAG, "No power control pin configured, forcing GPIO45 setup...");
+    gpio_config_t gpio_conf = {};
+    gpio_conf.pin_bit_mask = (1ULL << GPIO_NUM_45);
+    gpio_conf.mode = GPIO_MODE_OUTPUT;
+    gpio_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+    gpio_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    gpio_conf.intr_type = GPIO_INTR_DISABLE;
+    gpio_config(&gpio_conf);
+    
+    gpio_set_level(GPIO_NUM_45, 0);  // OFF
+    vTaskDelay(pdMS_TO_TICKS(100));
+    gpio_set_level(GPIO_NUM_45, 1);  // ON
+    ESP_LOGI(TAG, "GPIO45 manually configured for SD power");
+    vTaskDelay(pdMS_TO_TICKS(500));
   }
 
-  // Étape 2 : Configuration optimale pour le montage de la carte SD
+  // Configuration spécifique GUITION
   esp_vfs_fat_sdmmc_mount_config_t mount_config = {
     .format_if_mount_failed = false,
     .max_files = 16,
-    .allocation_unit_size = 256 * 1024  // 256KB optimise l'écriture des fichiers
+    .allocation_unit_size = 128 * 1024  // Plus petit pour GUITION
   };
 
+  // Host configuration pour GUITION
   sdmmc_host_t host = SDMMC_HOST_DEFAULT();
-  host.slot = SDMMC_HOST_SLOT_0 + this->slot_;  // Utilise le slot configuré
-  host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;  // 50MHz
+  host.slot = SDMMC_HOST_SLOT_0;  // Toujours slot 0 pour GUITION
+  host.max_freq_khz = 20000;      // Réduire la fréquence à 20MHz
+  host.flags = SDMMC_HOST_FLAG_4BIT;
 
+  // Configuration des pins avec pull-ups obligatoires
   sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
   slot_config.width = this->mode_1bit_ ? 1 : 4;
-
-  // Configuration des pins seulement si on utilise GPIO matrix
-  #ifdef SOC_SDMMC_USE_GPIO_MATRIX
-  slot_config.clk = static_cast<gpio_num_t>(this->clk_pin_);
-  slot_config.cmd = static_cast<gpio_num_t>(this->cmd_pin_);
-  slot_config.d0 = static_cast<gpio_num_t>(this->data0_pin_);
+  
+  // Pins explicites pour GUITION
+  slot_config.clk = GPIO_NUM_43;
+  slot_config.cmd = GPIO_NUM_44;
+  slot_config.d0 = GPIO_NUM_39;
   if (!this->mode_1bit_) {
-    slot_config.d1 = static_cast<gpio_num_t>(this->data1_pin_);
-    slot_config.d2 = static_cast<gpio_num_t>(this->data2_pin_);
-    slot_config.d3 = static_cast<gpio_num_t>(this->data3_pin_);
+    slot_config.d1 = GPIO_NUM_40;
+    slot_config.d2 = GPIO_NUM_41;
+    slot_config.d3 = GPIO_NUM_42;
   }
-  #endif
 
-  // Activation des pull-ups internes
+  // Pull-ups OBLIGATOIRES pour GUITION
   slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
+  
+  // Désactiver card detect et write protect
+  slot_config.cd = GPIO_NUM_NC;
+  slot_config.wp = GPIO_NUM_NC;
 
-  // Initialiser le slot spécifique avant le montage
-  ESP_LOGI(TAG, "Initializing SDMMC slot %d", this->slot_);
-  esp_err_t slot_init = sdmmc_host_init_slot(host.slot, &slot_config);
-  if (slot_init != ESP_OK) {
-    ESP_LOGE(TAG, "Failed to initialize slot %d: %s", this->slot_, esp_err_to_name(slot_init));
-    this->init_error_ = ErrorCode::ERR_PIN_SETUP;
-    mark_failed();
-    return;
-  }
+  ESP_LOGI(TAG, "Starting SD mount for GUITION...");
+  ESP_LOGI(TAG, "Pins - CLK:%d CMD:%d D0:%d D1:%d D2:%d D3:%d", 
+           slot_config.clk, slot_config.cmd, slot_config.d0, 
+           slot_config.d1, slot_config.d2, slot_config.d3);
 
-  // Tentative de montage avec logique de réessai
+  // Tentatives de montage avec reset entre chaque essai
   esp_err_t ret = ESP_FAIL;
+  
   for (int attempt = 1; attempt <= 3; attempt++) {
-    ESP_LOGI(TAG, "Mounting SD Card on slot %d (attempt %d/3)...", this->slot_, attempt);
+    ESP_LOGI(TAG, "Mount attempt %d/3", attempt);
+    
+    // Reset complet à chaque tentative
+    if (attempt > 1) {
+      esp_vfs_fat_sdmmc_unmount();
+      sdmmc_host_deinit();
+      vTaskDelay(pdMS_TO_TICKS(200));
+      
+      // Re-power cycle GPIO45
+      if (this->power_ctrl_pin_ != nullptr) {
+        this->power_ctrl_pin_->digital_write(false);
+        vTaskDelay(pdMS_TO_TICKS(100));
+        this->power_ctrl_pin_->digital_write(true);
+        vTaskDelay(pdMS_TO_TICKS(300));
+      } else {
+        gpio_set_level(GPIO_NUM_45, 0);
+        vTaskDelay(pdMS_TO_TICKS(100));
+        gpio_set_level(GPIO_NUM_45, 1);
+        vTaskDelay(pdMS_TO_TICKS(300));
+      }
+    }
+    
     ret = esp_vfs_fat_sdmmc_mount(MOUNT_POINT.c_str(), &host, &slot_config, &mount_config, &this->card_);
+    
     if (ret == ESP_OK) {
-      ESP_LOGI(TAG, "SD Card mounted successfully on slot %d!", this->slot_);
+      ESP_LOGI(TAG, "✓ SD Card mounted successfully on GUITION (attempt %d)!", attempt);
       break;
     }
-    ESP_LOGW(TAG, "Mount attempt %d failed: %s", attempt, esp_err_to_name(ret));
-    vTaskDelay(pdMS_TO_TICKS(100));  // Pause entre tentatives
+    
+    ESP_LOGE(TAG, "✗ Mount failed (attempt %d): %s", attempt, esp_err_to_name(ret));
+    
+    // Diagnostic détaillé de l'erreur
+    switch (ret) {
+      case ESP_ERR_TIMEOUT:
+        ESP_LOGE(TAG, "Timeout - Vérifiez les connexions et l'alimentation GPIO45");
+        break;
+      case ESP_ERR_INVALID_RESPONSE:
+        ESP_LOGE(TAG, "Invalid response - Carte SD défectueuse ou non compatible");
+        break;
+      case ESP_ERR_INVALID_CRC:
+        ESP_LOGE(TAG, "CRC error - Interférences ou connexions instables");
+        break;
+      case ESP_FAIL:
+        ESP_LOGE(TAG, "General failure - Vérifiez le format FAT32 de la carte");
+        break;
+      default:
+        ESP_LOGE(TAG, "Unknown error: 0x%x", ret);
+        break;
+    }
+    
+    vTaskDelay(pdMS_TO_TICKS(500 * attempt));
   }
 
   if (ret != ESP_OK) {
-    if (ret == ESP_FAIL) {
-      this->init_error_ = ErrorCode::ERR_MOUNT;
-      ESP_LOGE(TAG, "Failed to mount filesystem on SD card (slot %d)", this->slot_);
-    } else {
+    ESP_LOGE(TAG, "CRITICAL: Failed to mount SD card on GUITION after 3 attempts");
+    ESP_LOGE(TAG, "Check: 1) GPIO45 power control 2) Card format (FAT32) 3) Wiring");
+    
+    if (ret == ESP_ERR_TIMEOUT || ret == ESP_ERR_INVALID_RESPONSE) {
       this->init_error_ = ErrorCode::ERR_NO_CARD;
-      ESP_LOGE(TAG, "No SD card detected on slot %d", this->slot_);
+    } else {
+      this->init_error_ = ErrorCode::ERR_MOUNT;
     }
     mark_failed();
     return;
   }
 
-  // Diagnostic de la carte
-  ESP_LOGI(TAG, "SD Card Info (slot %d):", this->slot_);
-  ESP_LOGI(TAG, "  Name: %s", this->card_->cid.name);
-  ESP_LOGI(TAG, "  Type: %s", sd_card_type().c_str());
-  ESP_LOGI(TAG, "  Speed: %d kHz (max: %d kHz)", this->card_->max_freq_khz, SDMMC_FREQ_HIGHSPEED);
-  ESP_LOGI(TAG, "  Size: %llu MB", ((uint64_t)this->card_->csd.capacity * this->card_->csd.sector_size) / (1024 * 1024));
+  // Validation post-montage
+  if (this->card_ == nullptr) {
+    ESP_LOGE(TAG, "Card pointer null après montage réussi!");
+    this->init_error_ = ErrorCode::ERR_MOUNT;
+    mark_failed();
+    return;
+  }
+
+  // Informations détaillées
+  ESP_LOGI(TAG, "=== GUITION SD Card Successfully Mounted ===");
+  ESP_LOGI(TAG, "Card Name: %s", this->card_->cid.name);
+  ESP_LOGI(TAG, "Card Type: %s", sd_card_type().c_str());
+  ESP_LOGI(TAG, "Frequency: %d kHz (max: %d kHz)", this->card_->real_freq_khz, this->card_->max_freq_khz);
+  ESP_LOGI(TAG, "Capacity: %llu MB", ((uint64_t)this->card_->csd.capacity * this->card_->csd.sector_size) / (1024 * 1024));
+  ESP_LOGI(TAG, "Bus Width: %d-bit", this->mode_1bit_ ? 1 : 4);
+
+  // Test fonctionnel
+  ESP_LOGI(TAG, "Running functionality test...");
+  const char* test_data = "GUITION ESP32-P4 SD Test - GPIO45 Working!\n";
+  write_file("/guition_test.txt", reinterpret_cast<const uint8_t*>(test_data), strlen(test_data));
+  
+  if (file_size("/guition_test.txt") > 0) {
+    ESP_LOGI(TAG, "✓ SD write/read test PASSED");
+    delete_file("/guition_test.txt");
+  } else {
+    ESP_LOGW(TAG, "✗ SD write test FAILED - check permissions");
+  }
 
   update_sensors();
+  ESP_LOGI(TAG, "GUITION SD Card initialization complete!");
 }
 
 void SdMmc::write_file_chunked(const char *path, const uint8_t *buffer, size_t len, size_t chunk_size) {
