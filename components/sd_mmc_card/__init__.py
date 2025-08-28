@@ -94,14 +94,14 @@ async def to_code(config):
     if CONF_POWER_CTRL_PIN in config:
         power_ctrl = config[CONF_POWER_CTRL_PIN]
         
-        # Si c'est juste un numéro (ex: GPIO45), créer une configuration pin
+        # Si c'est juste un numéro (ex: GPIO45), utiliser directement gpio_pin_expression
         if isinstance(power_ctrl, int):
-            from esphome.core import Pin
-            pin_config = {
-                'number': power_ctrl,
-                'mode': {'output': True},
-                'inverted': False
-            }
+            # Créer une configuration de pin simple
+            pin_config = pins.gpio_pin_schema({
+                CONF_OUTPUT: True,
+                CONF_PULLUP: False,
+                CONF_PULLDOWN: False,
+            })(power_ctrl)
             power_ctrl_pin = await cg.gpio_pin_expression(pin_config)
         else:
             # Si c'est déjà une configuration complète
