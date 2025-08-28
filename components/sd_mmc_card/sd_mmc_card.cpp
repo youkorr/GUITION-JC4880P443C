@@ -1,3 +1,4 @@
+
 #include "sd_mmc_card.h"
 #include "esp_task_wdt.h"
 
@@ -78,6 +79,7 @@ void SdMmc::dump_config() {
     return;
   }
 }
+
 #ifdef USE_ESP_IDF
 
 void SdMmc::setup() {
@@ -178,11 +180,11 @@ void SdMmc::setup() {
     ret = esp_vfs_fat_sdmmc_mount(MOUNT_POINT.c_str(), &host, &slot_config, &mount_config, &this->card_);
     
     if (ret == ESP_OK) {
-      ESP_LOGI(TAG, "✓ SD Card mounted successfully on GUITION (attempt %d)!", attempt);
+      ESP_LOGI(TAG, "SD Card mounted successfully on GUITION (attempt %d)!", attempt);
       break;
     }
     
-    ESP_LOGE(TAG, "✗ Mount failed (attempt %d): %s", attempt, esp_err_to_name(ret));
+    ESP_LOGE(TAG, "Mount failed (attempt %d): %s", attempt, esp_err_to_name(ret));
     
     // Diagnostic détaillé de l'erreur
     switch (ret) {
@@ -235,26 +237,55 @@ void SdMmc::setup() {
   ESP_LOGI(TAG, "Capacity: %llu MB", ((uint64_t)this->card_->csd.capacity * this->card_->csd.sector_size) / (1024 * 1024));
   ESP_LOGI(TAG, "Bus Width: %d-bit", this->mode_1bit_ ? 1 : 4);
 
-  // Test fonctionnel
-  ESP_LOGI(TAG, "Running functionality test...");
+  // Test fonctionnel simple
+  ESP_LOGI(TAG, "Running basic functionality test...");
   const char* test_data = "GUITION ESP32-P4 SD Test - GPIO45 Working!\n";
   write_file("/guition_test.txt", reinterpret_cast<const uint8_t*>(test_data), strlen(test_data));
   
   if (file_size("/guition_test.txt") > 0) {
-    ESP_LOGI(TAG, "✓ SD write/read test PASSED");
+    ESP_LOGI(TAG, "SD write/read test PASSED");
     delete_file("/guition_test.txt");
   } else {
-    ESP_LOGW(TAG, "✗ SD write test FAILED - check permissions");
+    ESP_LOGW(TAG, "SD write test FAILED - check permissions");
   }
 
   update_sensors();
   ESP_LOGI(TAG, "GUITION SD Card initialization complete!");
 }
 
+void SdMmc::write_file(const char *path, const uint8_t *buffer, size_t len) {
+  this->write_file(path, buffer, len, "w");
+}
+
+void SdMmc::write_file(const char *path, const uint8_t *buffer, size_t len, const char *mode) {
+  ESP_LOGV(TAG, "Writing file: %s (mode: %s, size: %zu)", path, mode, len);
+  std::string absolut_path = build_path(path);
+  FILE *file = fopen(absolut_path.c_str(), mode);
+  if (file == nullptr) {
+    ESP_LOGE(TAG, "Failed to open file for writing: %s", strerror(errno));
+    return;
+  }
+
+  size_t written = fwrite(buffer, 1, len, file);
+  if (written != len) {
+    ESP_LOGE(TAG, "Write incomplete: expected %zu bytes, wrote %zu", len, written);
+  } else {
+    ESP_LOGV(TAG, "Successfully wrote %zu bytes to %s", written, path);
+  }
+  
+  if (fclose(file) != 0) {
+    ESP_LOGE(TAG, "Failed to close file: %s", strerror(errno));
+  }
+  this->update_sensors();
+}
+
+void SdMmc::append_file(const char *path, const uint8_t *buffer, size_t len) {
+  this->write_file(path, buffer, len, "a");
+}
+
 void SdMmc::write_file_chunked(const char *path, const uint8_t *buffer, size_t len, size_t chunk_size) {
   std::string absolut_path = build_path(path);
-  FILE *file = NULL;
-  file = fopen(absolut_path.c_str(), "a");
+  FILE *file = fopen(absolut_path.c_str(), "a");
   if (file == NULL) {
     ESP_LOGE(TAG, "Failed to open file for chunked writing");
     return;
@@ -273,6 +304,7 @@ void SdMmc::write_file_chunked(const char *path, const uint8_t *buffer, size_t l
   fclose(file);
   this->update_sensors();
 }
+
 #else
 void SdMmc::write_file_chunked(const char *path, const uint8_t *buffer, size_t len, size_t chunk_size) {
   ESP_LOGV(TAG, "Writing chunked to file: %s", path);
@@ -282,6 +314,18 @@ void SdMmc::write_file_chunked(const char *path, const uint8_t *buffer, size_t l
     this->write_file(path, buffer + written, to_write, "a");
     written += to_write;
   }
+}
+
+void SdMmc::write_file(const char *path, const uint8_t *buffer, size_t len) {
+  ESP_LOGE(TAG, "SD MMC not supported on this platform");
+}
+
+void SdMmc::write_file(const char *path, const uint8_t *buffer, size_t len, const char *mode) {
+  ESP_LOGE(TAG, "SD MMC not supported on this platform");  
+}
+
+void SdMmc::append_file(const char *path, const uint8_t *buffer, size_t len) {
+  ESP_LOGE(TAG, "SD MMC not supported on this platform");
 }
 #endif
 
@@ -358,7 +402,6 @@ bool SdMmc::is_directory(const char *path) {
 size_t SdMmc::file_size(const char *path) {
   std::string absolut_path = build_path(path);
   struct stat info;
-  size_t file_size = 0;
   if (stat(absolut_path.c_str(), &info) < 0) {
     ESP_LOGE(TAG, "Failed to stat file: %s", strerror(errno));
     return -1;
@@ -448,7 +491,6 @@ bool SdMmc::delete_file(const char *path) {
   return true;
 }
 
-// Lecture complète d'un fichier
 std::vector<uint8_t> SdMmc::read_file(const char *path) {
   ESP_LOGV(TAG, "Read File: %s", path);
 
@@ -483,9 +525,42 @@ std::vector<uint8_t> SdMmc::read_file(const char *path) {
   return res;
 }
 
+std::vector<uint8_t> SdMmc::read_file_chunked(const char *path, size_t offset, size_t chunk_size) {
+  ESP_LOGV(TAG, "Reading file chunked: %s (offset: %zu, chunk: %zu)", path, offset, chunk_size);
+  std::string absolut_path = build_path(path);
+  FILE *file = fopen(absolut_path.c_str(), "rb");
+  if (file == nullptr) {
+    ESP_LOGE(TAG, "Failed to open file for reading: %s", strerror(errno));
+    return {};
+  }
 
+  // Aller à la position demandée
+  if (fseek(file, offset, SEEK_SET) != 0) {
+    ESP_LOGE(TAG, "Failed to seek to position %zu: %s", offset, strerror(errno));
+    fclose(file);
+    return {};
+  }
 
-// Lecture en streaming par chunks avec reset du WDT
+  std::vector<uint8_t> buffer(chunk_size);
+  size_t read_len = fread(buffer.data(), 1, chunk_size, file);
+  
+  if (ferror(file)) {
+    ESP_LOGE(TAG, "Error reading file: %s", strerror(errno));
+    fclose(file);
+    return {};
+  }
+  
+  fclose(file);
+
+  // Ajuster la taille du vecteur si moins de données ont été lues
+  if (read_len < chunk_size) {
+    buffer.resize(read_len);
+  }
+
+  ESP_LOGV(TAG, "Read %zu bytes from %s", read_len, path);
+  return buffer;
+}
+
 void SdMmc::read_file_stream(const char *path, size_t offset, size_t chunk_size,
                              std::function<void(const uint8_t*, size_t)> callback) {
   std::string absolut_path = build_path(path);
