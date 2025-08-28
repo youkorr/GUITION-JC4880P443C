@@ -1,4 +1,3 @@
-
 #include "sd_mmc_card.h"
 #include "esp_task_wdt.h"
 
@@ -85,14 +84,14 @@ void SdMmc::dump_config() {
 void SdMmc::setup() {
   ESP_LOGI(TAG, "=== Initializing SD Card for GUITION ESP32-P4 ===");
   
-  // CRITIQUE: GPIO45 doit être configuré AVANT toute autre opération
+  // Power control doit être configuré AVANT toute autre opération
   if (this->power_ctrl_pin_ != nullptr) {
-    ESP_LOGI(TAG, "Configuring SD power control on GPIO%d...", this->power_ctrl_pin_->get_pin());
+    ESP_LOGI(TAG, "Configuring SD power control...");
     this->power_ctrl_pin_->setup();
     this->power_ctrl_pin_->digital_write(false);  // D'abord OFF
     vTaskDelay(pdMS_TO_TICKS(100));
     this->power_ctrl_pin_->digital_write(true);   // Puis ON
-    ESP_LOGI(TAG, "SD power enabled via GPIO%d", this->power_ctrl_pin_->get_pin());
+    ESP_LOGI(TAG, "SD power enabled via power control pin");
     vTaskDelay(pdMS_TO_TICKS(500));  // Délai plus long pour GUITION
   } else {
     ESP_LOGW(TAG, "No power control pin configured - SD may not work properly");
@@ -149,7 +148,7 @@ void SdMmc::setup() {
     
     // Reset complet à chaque tentative
     if (attempt > 1) {
-      esp_vfs_fat_sdmmc_unmount();
+      esp_vfs_fat_sdcard_unmount();  // Version non-dépréciée
       sdmmc_host_deinit();
       vTaskDelay(pdMS_TO_TICKS(200));
       
@@ -176,7 +175,7 @@ void SdMmc::setup() {
       case ESP_ERR_TIMEOUT:
         ESP_LOGE(TAG, "Timeout - Vérifiez les connexions et l'alimentation");
         if (this->power_ctrl_pin_ != nullptr) {
-          ESP_LOGE(TAG, "Power control pin: GPIO%d", this->power_ctrl_pin_->get_pin());
+          ESP_LOGE(TAG, "Power control pin configured");
         }
         break;
       case ESP_ERR_INVALID_RESPONSE:
@@ -247,6 +246,8 @@ void SdMmc::setup() {
   update_sensors();
   ESP_LOGI(TAG, "GUITION SD Card initialization complete!");
 }
+
+// Reste du code inchangé...
 void SdMmc::write_file(const char *path, const uint8_t *buffer, size_t len) {
   this->write_file(path, buffer, len, "w");
 }
