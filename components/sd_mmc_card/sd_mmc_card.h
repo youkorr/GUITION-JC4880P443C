@@ -89,6 +89,9 @@ class SdMmc : public Component {
   void set_mode_1bit(bool);
   void set_power_ctrl_pin(GPIOPin *);
 
+  void set_pwr_ctrl_by_on_chip_ldo(bool enable) { pwr_ctrl_by_on_chip_ldo_ = enable; }
+  void set_frequency(uint32_t frequency) { frequency_ = frequency; }
+
   void set_slot(uint8_t slot) { this->slot_ = slot; }
 
  protected:
@@ -103,6 +106,9 @@ class SdMmc : public Component {
   GPIOPin *power_ctrl_pin_{nullptr};
 
   uint8_t slot_ = 0;  // Par défaut slot 0
+
+  bool pwr_ctrl_by_on_chip_ldo_{false};
+  uint32_t frequency_{40000};  // 40kHz par défaut
 
 #ifdef USE_ESP_IDF
   sdmmc_card_t *card_;
