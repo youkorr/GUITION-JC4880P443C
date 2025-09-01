@@ -201,23 +201,18 @@ void SdMmc::setup() {
   }
 #endif
 
-  ESP_LOGI(TAG, "Initializing SDMMC slot %d...", this->slot_);
-  esp_err_t slot_ret = sdmmc_host_init_slot(host.slot, &slot_config);
-  if (slot_ret != ESP_OK) {
-    ESP_LOGE(TAG, "SDMMC slot initialization failed: %s (0x%x)", esp_err_to_name(slot_ret), slot_ret);
-    this->init_error_ = ErrorCode::ERR_PIN_SETUP;
-    mark_failed();
-    return;
-  }
-  ESP_LOGI(TAG, "SDMMC slot initialized successfully");
-  esp_err_t slot_ret = sdmmc_host_init_slot(host.slot, &slot_config);
-  if (slot_ret != ESP_OK) {
-    ESP_LOGE(TAG, "SDMMC slot initialization failed: %s (0x%x)", esp_err_to_name(slot_ret), slot_ret);
-    this->init_error_ = ErrorCode::ERR_PIN_SETUP;
-    mark_failed();
-    return;
-  }
-  ESP_LOGI(TAG, "SDMMC slot initialized successfully");
+ESP_LOGI(TAG, "Initializing SDMMC slot %d...", this->slot_);
+
+esp_err_t slot_ret = sdmmc_host_init_slot(host.slot, &slot_config);
+if (slot_ret != ESP_OK) {
+  ESP_LOGE(TAG, "SDMMC slot initialization failed: %s (0x%x)", esp_err_to_name(slot_ret), slot_ret);
+  this->init_error_ = ErrorCode::ERR_PIN_SETUP;
+  mark_failed();
+  return;
+}
+
+ESP_LOGI(TAG, "SDMMC slot initialized successfully");
+
 
   // Tentatives de montage avec stratégie progressive
   esp_err_t mount_ret = ESP_FAIL;
