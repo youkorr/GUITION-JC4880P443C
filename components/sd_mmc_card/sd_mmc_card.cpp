@@ -7,6 +7,7 @@
 
 #include "math.h"
 #include "esphome/core/log.h"
+#include "esphome/core/application.h"
 
 #ifdef USE_ESP_IDF
 #include "esp_vfs.h"
@@ -398,10 +399,6 @@ bool SdMmc::delete_file(const char *path) {
   return true;
 }
 
-bool SdMmc::delete_file(std::string const &path) { 
-  return this->delete_file(path.c_str()); 
-}
-
 bool SdMmc::create_directory(const char *path) {
   ESP_LOGV(TAG, "Creating directory: %s", path);
   std::string absolut_path = build_path(path);
@@ -466,10 +463,6 @@ std::vector<uint8_t> SdMmc::read_file(const char *path) {
   return result;
 }
 
-std::vector<uint8_t> SdMmc::read_file(std::string const &path) { 
-  return this->read_file(path.c_str()); 
-}
-
 std::vector<uint8_t> SdMmc::read_file_chunked(const char *path, size_t offset, size_t chunk_size) {
   ESP_LOGV(TAG, "Reading file chunk: %s (offset: %zu, size: %zu)", path, offset, chunk_size);
   
@@ -495,10 +488,6 @@ std::vector<uint8_t> SdMmc::read_file_chunked(const char *path, size_t offset, s
   return result;
 }
 
-std::vector<uint8_t> SdMmc::read_file_chunked(std::string const &path, size_t offset, size_t chunk_size) {
-  return this->read_file_chunked(path.c_str(), offset, chunk_size);
-}
-
 bool SdMmc::is_directory(const char *path) {
   std::string absolut_path = build_path(path);
   DIR *dir = opendir(absolut_path.c_str());
@@ -507,10 +496,6 @@ bool SdMmc::is_directory(const char *path) {
     return true;
   }
   return false;
-}
-
-bool SdMmc::is_directory(std::string const &path) { 
-  return this->is_directory(path.c_str()); 
 }
 
 std::vector<std::string> SdMmc::list_directory(const char *path, uint8_t depth) {
@@ -522,21 +507,12 @@ std::vector<std::string> SdMmc::list_directory(const char *path, uint8_t depth) 
   return list;
 }
 
-std::vector<std::string> SdMmc::list_directory(std::string path, uint8_t depth) {
-  return this->list_directory(path.c_str(), depth);
-}
-
 std::vector<FileInfo> SdMmc::list_directory_file_info(const char *path, uint8_t depth) {
   std::vector<FileInfo> list;
   list_directory_file_info_rec(path, depth, list);
   return list;
 }
 
-std::vector<FileInfo> SdMmc::list_directory_file_info(std::string path, uint8_t depth) {
-  return this->list_directory_file_info(path.c_str(), depth);
-}
-
-#ifdef USE_ESP_IDF
 std::vector<FileInfo> &SdMmc::list_directory_file_info_rec(const char *path, uint8_t depth,
                                                            std::vector<FileInfo> &list) {
   ESP_LOGV(TAG, "Listing directory file info: %s\n", path);
@@ -574,15 +550,6 @@ std::vector<FileInfo> &SdMmc::list_directory_file_info_rec(const char *path, uin
   }
   closedir(dir);
   return list;
-}
-
-bool SdMmc::is_directory(const char *path) {
-  std::string absolut_path = build_path(path);
-  DIR *dir = opendir(absolut_path.c_str());
-  if (dir) {
-    closedir(dir);
-  }
-  return dir != nullptr;
 }
 
 size_t SdMmc::file_size(const char *path) {
@@ -639,82 +606,6 @@ void SdMmc::update_sensors() {
 #endif
 }
 
-bool SdMmc::create_directory(const char *path) {
-  ESP_LOGV(TAG, "Create directory: %s", path);
-  std::string absolut_path = build_path(path);
-  if (mkdir(absolut_path.c_str(), 0777) < 0) {
-    ESP_LOGE(TAG, "Failed to create a new directory: %s", strerror(errno));
-    return false;
-  }
-  this->update_sensors();
-  return true;
-}
-
-bool SdMmc::remove_directory(const char *path) {
-  ESP_LOGV(TAG, "Remove directory: %s", path);
-  if (!this->is_directory(path)) {
-    ESP_LOGE(TAG, "Not a directory");
-    return false;
-  }
-  std::string absolut_path = build_path(path);
-  if (remove(absolut_path.c_str()) != 0) {
-    ESP_LOGE(TAG, "Failed to remove directory: %s", strerror(errno));
-  }
-  this->update_sensors();
-  return true;
-}
-
-bool SdMmc::delete_file(const char *path) {
-  ESP_LOGV(TAG, "Delete File: %s", path);
-  if (this->is_directory(path)) {
-    ESP_LOGE(TAG, "Not a file");
-    return false;
-  }
-  std::string absolut_path = build_path(path);
-  if (remove(absolut_path.c_str()) != 0) {
-    ESP_LOGE(TAG, "Failed to remove file: %s", strerror(errno));
-  }
-  this->update_sensors();
-  return true;
-}
-
-// Lecture complète d'un fichier
-std::vector<uint8_t> SdMmc::read_file(const char *path) {
-  ESP_LOGV(TAG, "Read File: %s", path);
-
-  // Vérifier d'abord la taille du fichier
-  size_t file_size = this->file_size(path);
-  
-  // Limite de sécurité, par exemple 5MB
-  constexpr size_t MAX_SAFE_SIZE = 5 * 1024 * 1024;
-  
-  if (file_size > MAX_SAFE_SIZE) {
-    ESP_LOGE(TAG, "File too large for direct reading: %zu bytes (max: %zu). Use read_file_stream instead.", 
-             file_size, MAX_SAFE_SIZE);
-    return {};
-  }
-
-  std::string absolut_path = build_path(path);
-  FILE *file = fopen(absolut_path.c_str(), "rb");
-  if (file == nullptr) {
-    ESP_LOGE(TAG, "Failed to open file for reading");
-    return {};
-  }
-
-  std::vector<uint8_t> res(file_size);
-  size_t read_len = fread(res.data(), 1, file_size, file);
-  fclose(file);
-
-  if (read_len != file_size) {
-    ESP_LOGE(TAG, "Read incomplete: expected %zu bytes, got %zu", file_size, read_len);
-    return {};
-  }
-
-  return res;
-}
-
-
-
 // Lecture en streaming par chunks avec reset du WDT
 void SdMmc::read_file_stream(const char *path, size_t offset, size_t chunk_size,
                              std::function<void(const uint8_t*, size_t)> callback) {
@@ -751,19 +642,34 @@ void SdMmc::read_file_stream(const char *path, size_t offset, size_t chunk_size,
   }
 }
 
-
 #endif
-size_t SdMmc::file_size(std::string const &path) { return this->file_size(path.c_str()); }
 
-bool SdMmc::is_directory(std::string const &path) { return this->is_directory(path.c_str()); }
+// Implementations pour les surcharges de méthodes avec std::string
+bool SdMmc::delete_file(std::string const &path) { 
+  return this->delete_file(path.c_str()); 
+}
 
-bool SdMmc::delete_file(std::string const &path) { return this->delete_file(path.c_str()); }
+bool SdMmc::is_directory(std::string const &path) { 
+  return this->is_directory(path.c_str()); 
+}
 
-std::vector<uint8_t> SdMmc::read_file(std::string const &path) { return this->read_file(path.c_str()); }
+std::vector<uint8_t> SdMmc::read_file(std::string const &path) { 
+  return this->read_file(path.c_str()); 
+}
 
 std::vector<uint8_t> SdMmc::read_file_chunked(std::string const &path, size_t offset, size_t chunk_size) {
   return this->read_file_chunked(path.c_str(), offset, chunk_size);
 }
+
+std::vector<std::string> SdMmc::list_directory(std::string path, uint8_t depth) {
+  return this->list_directory(path.c_str(), depth);
+}
+
+std::vector<FileInfo> SdMmc::list_directory_file_info(std::string path, uint8_t depth) {
+  return this->list_directory_file_info(path.c_str(), depth);
+}
+
+size_t SdMmc::file_size(std::string const &path) { return this->file_size(path.c_str()); }
 
 #ifdef USE_SENSOR
 void SdMmc::add_file_size_sensor(sensor::Sensor *sensor, std::string const &path) {
