@@ -18,7 +18,6 @@
 
 // Pour ESP32-P4 - Gestion du contrôle d'alimentation
 #if CONFIG_IDF_TARGET_ESP32P4
-  // Essayer d'inclure le fichier d'en-tête s'il existe
   #ifdef __has_include
     #if __has_include("sd_pwr_ctrl_by_on_chip_ldo.h")
       #include "sd_pwr_ctrl_by_on_chip_ldo.h"
@@ -30,8 +29,7 @@
   #else
     #define HAS_LDO_PWR_CTRL 0
   #endif
-  
-  // Définitions pour le contrôle LDO si le fichier n'est pas disponible
+
   #if !HAS_LDO_PWR_CTRL
     typedef struct {
         int ldo_chan_id;
@@ -63,11 +61,8 @@ FileSizeSensor::FileSizeSensor(sensor::Sensor *sensor, std::string const &path) 
 #endif
 
 void SdMmc::loop() {
-  // Mise à jour périodique des capteurs si nécessaire
   static uint32_t last_update = 0;
   uint32_t now = millis();
-  
-  // Mettre à jour les capteurs toutes les 30 secondes
   if (now - last_update > 30000) {
     update_sensors();
     last_update = now;
@@ -122,41 +117,40 @@ void SdMmc::dump_config() {
 void SdMmc::setup() {
   ESP_LOGI(TAG, "Setting up SD MMC for ESP32-P4...");
   
-  // Variables pour le contrôle d'alimentation
   bool power_controlled = false;
-  
+
 #if CONFIG_IDF_TARGET_ESP32P4 && HAS_LDO_PWR_CTRL
   sd_pwr_ctrl_handle_t pwr_ctrl_handle = NULL;
-  
-  // Méthode 1: Utilisation du LDO intégré (recommandée pour ESP32-P4)
   ESP_LOGI(TAG, "Attempting to use on-chip LDO power control...");
   sd_pwr_ctrl_ldo_config_t pwr_ctrl_config = {
-    .ldo_chan_id = 4  // Canal LDO typique pour ESP32-P4
+    .ldo_chan_id = 4
   };
-  
+
   esp_err_t pwr_ret = sd_pwr_ctrl_new_on_chip_ldo(&pwr_ctrl_config, &pwr_ctrl_handle);
-  
   if (pwr_ret == ESP_OK && pwr_ctrl_handle != NULL) {
     ESP_LOGI(TAG, "LDO power control created successfully");
+
+  #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
     esp_err_t pwr_on_ret = sd_pwr_ctrl_on(pwr_ctrl_handle);
     if (pwr_on_ret == ESP_OK) {
       power_controlled = true;
-      ESP_LOGI(TAG, "LDO power activated");
-      vTaskDelay(pdMS_TO_TICKS(200)); // Attendre la stabilisation
+      ESP_LOGI(TAG, "LDO power activated (legacy API)");
+      vTaskDelay(pdMS_TO_TICKS(200));
     } else {
       ESP_LOGE(TAG, "Failed to activate LDO power: %s", esp_err_to_name(pwr_on_ret));
-      // Nettoyer si l'activation a échoué
-      if (pwr_ctrl_handle) {
-        // Note: il pourrait y avoir une fonction de destruction à appeler ici
-        pwr_ctrl_handle = NULL;
-      }
+      pwr_ctrl_handle = NULL;
     }
+  #else
+    power_controlled = true;
+    ESP_LOGI(TAG, "LDO power assumed active (ESP-IDF v5+ API)");
+    vTaskDelay(pdMS_TO_TICKS(200));
+  #endif
+
   } else {
     ESP_LOGW(TAG, "LDO power control creation failed: %s", esp_err_to_name(pwr_ret));
   }
 #endif
 
-  // Méthode 2: Contrôle GPIO de secours
   if (!power_controlled && this->power_ctrl_pin_ != nullptr) {
     ESP_LOGI(TAG, "Using GPIO power control as fallback");
     this->power_ctrl_pin_->setup();
@@ -170,26 +164,20 @@ void SdMmc::setup() {
     ESP_LOGW(TAG, "No power control configured - ensure SD card has stable power supply");
   }
 
-  // Configuration de montage optimisée
   esp_vfs_fat_sdmmc_mount_config_t mount_config = {
     .format_if_mount_failed = false,
-    .max_files = 8,  // Limite raisonnable pour économiser la mémoire
-    .allocation_unit_size = 64 * 1024  // 64KB pour de bonnes performances
+    .max_files = 8,
+    .allocation_unit_size = 64 * 1024
   };
 
-  // Configuration de l'hôte avec paramètres conservateurs
   sdmmc_host_t host = SDMMC_HOST_DEFAULT();
   host.slot = SDMMC_HOST_SLOT_0 + this->slot_;
-  
-  // Commencer avec une fréquence très basse pour l'initialisation
-  host.max_freq_khz = SDMMC_FREQ_PROBING;  // 400 kHz
+  host.max_freq_khz = SDMMC_FREQ_PROBING;
   host.flags = this->mode_1bit_ ? SDMMC_HOST_FLAG_1BIT : SDMMC_HOST_FLAG_4BIT;
 
-  // Configuration du slot
   sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
   slot_config.width = this->mode_1bit_ ? 1 : 4;
-  
-  // Configuration des pins pour ESP32-P4
+
 #ifdef SOC_SDMMC_USE_GPIO_MATRIX
   slot_config.clk = static_cast<gpio_num_t>(this->clk_pin_);
   slot_config.cmd = static_cast<gpio_num_t>(this->cmd_pin_);
@@ -204,19 +192,24 @@ void SdMmc::setup() {
   ESP_LOGW(TAG, "GPIO matrix not available - using default pins");
 #endif
 
-  // Activation des résistances de pull-up internes
   slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
 
-#if CONFIG_IDF_TARGET_ESP32P4 && HAS_LDO_PWR_CTRL
-  // Associer le contrôle d'alimentation LDO au slot si disponible
+#if CONFIG_IDF_TARGET_ESP32P4 && HAS_LDO_PWR_CTRL && ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
   if (power_controlled && pwr_ctrl_handle != NULL) {
     slot_config.pwr_ctrl_handle = pwr_ctrl_handle;
     ESP_LOGI(TAG, "LDO power control attached to slot configuration");
   }
 #endif
 
-  // Initialisation du slot avec gestion d'erreur
   ESP_LOGI(TAG, "Initializing SDMMC slot %d...", this->slot_);
+  esp_err_t slot_ret = sdmmc_host_init_slot(host.slot, &slot_config);
+  if (slot_ret != ESP_OK) {
+    ESP_LOGE(TAG, "SDMMC slot initialization failed: %s (0x%x)", esp_err_to_name(slot_ret), slot_ret);
+    this->init_error_ = ErrorCode::ERR_PIN_SETUP;
+    mark_failed();
+    return;
+  }
+  ESP_LOGI(TAG, "SDMMC slot initialized successfully");
   esp_err_t slot_ret = sdmmc_host_init_slot(host.slot, &slot_config);
   if (slot_ret != ESP_OK) {
     ESP_LOGE(TAG, "SDMMC slot initialization failed: %s (0x%x)", esp_err_to_name(slot_ret), slot_ret);
