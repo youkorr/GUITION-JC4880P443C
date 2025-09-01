@@ -61,6 +61,7 @@ CONFIG_SCHEMA = cv.Schema(
             CONF_PULLUP: False,
             CONF_PULLDOWN: False,
         }),
+        cv.Optional('pwr_ctrl_by_on_chip_ldo', default=False): cv.boolean, 
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -71,7 +72,9 @@ async def to_code(config):
     await cg.register_component(var, config)
 
     cg.add(var.set_mode_1bit(config[CONF_MODE_1BIT]))
-    cg.add(var.set_slot(config[CONF_SLOT]))  # Ajout de la configuration du slot
+    cg.add(var.set_slot(config[CONF_SLOT])) 
+    
+    cg.add(var.set_pwr_ctrl_by_on_chip_ldo(config['pwr_ctrl_by_on_chip_ldo']))
 
     cg.add(var.set_clk_pin(config[CONF_CLK_PIN]))
     cg.add(var.set_cmd_pin(config[CONF_CMD_PIN]))
