@@ -14,9 +14,35 @@
 #include "sdmmc_cmd.h"
 #include "driver/sdmmc_host.h"
 #include "driver/sdmmc_types.h"
-#include "sd_pwr_ctrl_by_on_chip_ldo.h"
 
-int constexpr SD_OCR_SDHC_CAP = (1 << 30);  // value defined in esp-idf/components/sdmmc/include/sd_protocol_defs.h
+// Pour ESP32-P4 - Gestion du contrôle d'alimentation
+#if CONFIG_IDF_TARGET_ESP32P4
+  // Essayer d'inclure le fichier d'en-tête s'il existe
+  #ifdef __has_include
+    #if __has_include("sd_pwr_ctrl_by_on_chip_ldo.h")
+      #include "sd_pwr_ctrl_by_on_chip_ldo.h"
+      #define HAS_LDO_PWR_CTRL 1
+    #else
+      #define HAS_LDO_PWR_CTRL 0
+      ESP_LOGW("sd_mmc_card", "sd_pwr_ctrl_by_on_chip_ldo.h not available, using GPIO control fallback");
+    #endif
+  #else
+    #define HAS_LDO_PWR_CTRL 0
+  #endif
+  
+  // Définitions pour le contrôle LDO si le fichier n'est pas disponible
+  #if !HAS_LDO_PWR_CTRL
+    typedef struct {
+        int ldo_chan_id;
+    } sd_pwr_ctrl_ldo_config_t;
+    typedef void* sd_pwr_ctrl_handle_t;
+    #define ESP_ERR_NOT_SUPPORTED 0x106
+  #endif
+#else
+  #define HAS_LDO_PWR_CTRL 0
+#endif
+
+int constexpr SD_OCR_SDHC_CAP = (1 << 30);
 #endif
 
 namespace esphome {
@@ -35,7 +61,17 @@ std::string build_path(const char *path) { return MOUNT_POINT + path; }
 FileSizeSensor::FileSizeSensor(sensor::Sensor *sensor, std::string const &path) : sensor(sensor), path(path) {}
 #endif
 
-void SdMmc::loop() {}
+void SdMmc::loop() {
+  // Mise à jour périodique des capteurs si nécessaire
+  static uint32_t last_update = 0;
+  uint32_t now = millis();
+  
+  // Mettre à jour les capteurs toutes les 30 secondes
+  if (now - last_update > 30000) {
+    update_sensors();
+    last_update = now;
+  }
+}
 
 void SdMmc::dump_config() {
   ESP_LOGCONFIG(TAG, "SD MMC Component");
@@ -53,13 +89,15 @@ void SdMmc::dump_config() {
     LOG_PIN("  Power Ctrl Pin: ", this->power_ctrl_pin_);
   }
 
-  if (!this->is_failed()) {
+#ifdef USE_ESP_IDF
+  if (!this->is_failed() && this->card_ != nullptr) {
     const char *freq_unit = card_->real_freq_khz < 1000 ? "kHz" : "MHz";
     const float freq = card_->real_freq_khz < 1000 ? card_->real_freq_khz : card_->real_freq_khz / 1000.0;
     const char *max_freq_unit = card_->max_freq_khz < 1000 ? "kHz" : "MHz";
     const float max_freq = card_->max_freq_khz < 1000 ? card_->max_freq_khz : card_->max_freq_khz / 1000.0;
     ESP_LOGCONFIG(TAG, "  Card Speed:  %.2f %s (limit: %.2f %s)%s", freq, freq_unit, max_freq, max_freq_unit, card_->is_ddr ? ", DDR" : "");
   }
+#endif
 
 #ifdef USE_SENSOR
   LOG_SENSOR("  ", "Used space", this->used_space_sensor_);
@@ -80,253 +118,407 @@ void SdMmc::dump_config() {
 }
 
 #ifdef USE_ESP_IDF
-
 void SdMmc::setup() {
-  ESP_LOGI(TAG, "=== Initializing SD Card for GUITION ESP32-P4 ===");
+  ESP_LOGI(TAG, "Setting up SD MMC for ESP32-P4...");
   
-  // Power control doit être configuré AVANT toute autre opération
-  if (this->power_ctrl_pin_ != nullptr) {
-    ESP_LOGI(TAG, "Configuring SD power control...");
-    this->power_ctrl_pin_->setup();
-    this->power_ctrl_pin_->digital_write(false);  // D'abord OFF
-    vTaskDelay(pdMS_TO_TICKS(100));
-    this->power_ctrl_pin_->digital_write(true);   // Puis ON
-    ESP_LOGI(TAG, "SD power enabled via power control pin");
-    vTaskDelay(pdMS_TO_TICKS(500));  // Délai plus long pour GUITION
+  // Variables pour le contrôle d'alimentation
+  bool power_controlled = false;
+  
+#if CONFIG_IDF_TARGET_ESP32P4 && HAS_LDO_PWR_CTRL
+  sd_pwr_ctrl_handle_t pwr_ctrl_handle = NULL;
+  
+  // Méthode 1: Utilisation du LDO intégré (recommandée pour ESP32-P4)
+  ESP_LOGI(TAG, "Attempting to use on-chip LDO power control...");
+  sd_pwr_ctrl_ldo_config_t pwr_ctrl_config = {
+    .ldo_chan_id = 4  // Canal LDO typique pour ESP32-P4
+  };
+  
+  esp_err_t pwr_ret = sd_pwr_ctrl_new_on_chip_ldo(&pwr_ctrl_config, &pwr_ctrl_handle);
+  
+  if (pwr_ret == ESP_OK && pwr_ctrl_handle != NULL) {
+    ESP_LOGI(TAG, "LDO power control created successfully");
+    esp_err_t pwr_on_ret = sd_pwr_ctrl_on(pwr_ctrl_handle);
+    if (pwr_on_ret == ESP_OK) {
+      power_controlled = true;
+      ESP_LOGI(TAG, "LDO power activated");
+      vTaskDelay(pdMS_TO_TICKS(200)); // Attendre la stabilisation
+    } else {
+      ESP_LOGE(TAG, "Failed to activate LDO power: %s", esp_err_to_name(pwr_on_ret));
+      // Nettoyer si l'activation a échoué
+      if (pwr_ctrl_handle) {
+        // Note: il pourrait y avoir une fonction de destruction à appeler ici
+        pwr_ctrl_handle = NULL;
+      }
+    }
   } else {
-    ESP_LOGW(TAG, "No power control pin configured - SD may not work properly");
+    ESP_LOGW(TAG, "LDO power control creation failed: %s", esp_err_to_name(pwr_ret));
+  }
+#endif
+
+  // Méthode 2: Contrôle GPIO de secours
+  if (!power_controlled && this->power_ctrl_pin_ != nullptr) {
+    ESP_LOGI(TAG, "Using GPIO power control as fallback");
+    this->power_ctrl_pin_->setup();
+    this->power_ctrl_pin_->digital_write(true);
+    power_controlled = true;
+    ESP_LOGI(TAG, "GPIO power control activated");
+    vTaskDelay(pdMS_TO_TICKS(200));
   }
 
-  // Configuration spécifique GUITION
+  if (!power_controlled) {
+    ESP_LOGW(TAG, "No power control configured - ensure SD card has stable power supply");
+  }
+
+  // Configuration de montage optimisée
   esp_vfs_fat_sdmmc_mount_config_t mount_config = {
     .format_if_mount_failed = false,
-    .max_files = 16,
-    .allocation_unit_size = 128 * 1024  // Plus petit pour GUITION
+    .max_files = 8,  // Limite raisonnable pour économiser la mémoire
+    .allocation_unit_size = 64 * 1024  // 64KB pour de bonnes performances
   };
 
-  // Host configuration pour GUITION
+  // Configuration de l'hôte avec paramètres conservateurs
   sdmmc_host_t host = SDMMC_HOST_DEFAULT();
-  host.slot = static_cast<int>(this->slot_);  // Utiliser le slot configuré
-  host.max_freq_khz = 20000;      // Réduire la fréquence à 20MHz
+  host.slot = SDMMC_HOST_SLOT_0 + this->slot_;
+  
+  // Commencer avec une fréquence très basse pour l'initialisation
+  host.max_freq_khz = SDMMC_FREQ_PROBING;  // 400 kHz
   host.flags = this->mode_1bit_ ? SDMMC_HOST_FLAG_1BIT : SDMMC_HOST_FLAG_4BIT;
 
-  // Configuration des pins avec les valeurs configurées
+  // Configuration du slot
   sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
   slot_config.width = this->mode_1bit_ ? 1 : 4;
   
-  // Utiliser les pins configurées au lieu de valeurs fixes
+  // Configuration des pins pour ESP32-P4
+#ifdef SOC_SDMMC_USE_GPIO_MATRIX
   slot_config.clk = static_cast<gpio_num_t>(this->clk_pin_);
   slot_config.cmd = static_cast<gpio_num_t>(this->cmd_pin_);
   slot_config.d0 = static_cast<gpio_num_t>(this->data0_pin_);
-  
   if (!this->mode_1bit_) {
     slot_config.d1 = static_cast<gpio_num_t>(this->data1_pin_);
     slot_config.d2 = static_cast<gpio_num_t>(this->data2_pin_);
     slot_config.d3 = static_cast<gpio_num_t>(this->data3_pin_);
   }
+  ESP_LOGI(TAG, "Using GPIO matrix for pin configuration");
+#else
+  ESP_LOGW(TAG, "GPIO matrix not available - using default pins");
+#endif
 
-  // Pull-ups OBLIGATOIRES pour GUITION
+  // Activation des résistances de pull-up internes
   slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
-  
-  // Désactiver card detect et write protect
-  slot_config.cd = GPIO_NUM_NC;
-  slot_config.wp = GPIO_NUM_NC;
 
-  ESP_LOGI(TAG, "Starting SD mount for GUITION...");
-  ESP_LOGI(TAG, "Pins - CLK:%d CMD:%d D0:%d", 
-           slot_config.clk, slot_config.cmd, slot_config.d0);
-  if (!this->mode_1bit_) {
-    ESP_LOGI(TAG, "Data pins - D1:%d D2:%d D3:%d", 
-             slot_config.d1, slot_config.d2, slot_config.d3);
+#if CONFIG_IDF_TARGET_ESP32P4 && HAS_LDO_PWR_CTRL
+  // Associer le contrôle d'alimentation LDO au slot si disponible
+  if (power_controlled && pwr_ctrl_handle != NULL) {
+    slot_config.pwr_ctrl_handle = pwr_ctrl_handle;
+    ESP_LOGI(TAG, "LDO power control attached to slot configuration");
   }
+#endif
 
-  // Tentatives de montage avec reset entre chaque essai
-  esp_err_t ret = ESP_FAIL;
+  // Initialisation du slot avec gestion d'erreur
+  ESP_LOGI(TAG, "Initializing SDMMC slot %d...", this->slot_);
+  esp_err_t slot_ret = sdmmc_host_init_slot(host.slot, &slot_config);
+  if (slot_ret != ESP_OK) {
+    ESP_LOGE(TAG, "SDMMC slot initialization failed: %s (0x%x)", esp_err_to_name(slot_ret), slot_ret);
+    this->init_error_ = ErrorCode::ERR_PIN_SETUP;
+    mark_failed();
+    return;
+  }
+  ESP_LOGI(TAG, "SDMMC slot initialized successfully");
+
+  // Tentatives de montage avec stratégie progressive
+  esp_err_t mount_ret = ESP_FAIL;
+  const int max_attempts = 5;
+  const int delays_ms[] = {100, 250, 500, 1000, 2000};
   
-  for (int attempt = 1; attempt <= 3; attempt++) {
-    ESP_LOGI(TAG, "Mount attempt %d/3", attempt);
+  for (int attempt = 0; attempt < max_attempts; attempt++) {
+    ESP_LOGI(TAG, "Mounting SD Card on slot %d (attempt %d/%d)...", this->slot_, attempt + 1, max_attempts);
     
-    // Reset complet à chaque tentative
-    if (attempt > 1) {
-      esp_vfs_fat_sdcard_unmount("/sdcard", this->card_);
-      sdmmc_host_deinit();
-      vTaskDelay(pdMS_TO_TICKS(200));
-      
-      // Re-power cycle si pin de contrôle disponible
-      if (this->power_ctrl_pin_ != nullptr) {
-        this->power_ctrl_pin_->digital_write(false);
-        vTaskDelay(pdMS_TO_TICKS(100));
-        this->power_ctrl_pin_->digital_write(true);
-        vTaskDelay(pdMS_TO_TICKS(300));
-      }
-    }
+    mount_ret = esp_vfs_fat_sdmmc_mount(MOUNT_POINT.c_str(), &host, &slot_config, &mount_config, &this->card_);
     
-    ret = esp_vfs_fat_sdmmc_mount(MOUNT_POINT.c_str(), &host, &slot_config, &mount_config, &this->card_);
-    
-    if (ret == ESP_OK) {
-      ESP_LOGI(TAG, "SD Card mounted successfully on GUITION (attempt %d)!", attempt);
+    if (mount_ret == ESP_OK) {
+      ESP_LOGI(TAG, "✓ SD Card successfully mounted on slot %d!", this->slot_);
       break;
     }
     
-    ESP_LOGE(TAG, "Mount failed (attempt %d): %s", attempt, esp_err_to_name(ret));
-    
-    // Diagnostic détaillé de l'erreur
-    switch (ret) {
+    // Log détaillé selon le type d'erreur
+    switch (mount_ret) {
       case ESP_ERR_TIMEOUT:
-        ESP_LOGE(TAG, "Timeout - Vérifiez les connexions et l'alimentation");
-        if (this->power_ctrl_pin_ != nullptr) {
-          ESP_LOGE(TAG, "Power control pin configured");
-        }
+        ESP_LOGW(TAG, "Attempt %d: Timeout - card may not be responding", attempt + 1);
         break;
-      case ESP_ERR_INVALID_RESPONSE:
-        ESP_LOGE(TAG, "Invalid response - Carte SD défectueuse ou non compatible");
+      case ESP_ERR_INVALID_STATE:
+        ESP_LOGW(TAG, "Attempt %d: Invalid state - driver issue", attempt + 1);
         break;
-      case ESP_ERR_INVALID_CRC:
-        ESP_LOGE(TAG, "CRC error - Interférences ou connexions instables");
-        break;
-      case ESP_FAIL:
-        ESP_LOGE(TAG, "General failure - Vérifiez le format FAT32 de la carte");
+      case ESP_ERR_NOT_FOUND:
+        ESP_LOGW(TAG, "Attempt %d: Card not found - check insertion", attempt + 1);
         break;
       default:
-        ESP_LOGE(TAG, "Unknown error: 0x%x", ret);
+        ESP_LOGW(TAG, "Attempt %d: Error %s (0x%x)", attempt + 1, esp_err_to_name(mount_ret), mount_ret);
+    }
+    
+    // Attendre avant la prochaine tentative
+    if (attempt < max_attempts - 1) {
+      vTaskDelay(pdMS_TO_TICKS(delays_ms[attempt]));
+    }
+  }
+
+  // Gestion finale des échecs
+  if (mount_ret != ESP_OK) {
+    switch (mount_ret) {
+      case ESP_ERR_INVALID_STATE:
+        ESP_LOGE(TAG, "✗ SD card driver not properly initialized");
+        this->init_error_ = ErrorCode::ERR_PIN_SETUP;
+        break;
+      case ESP_ERR_NO_MEM:
+        ESP_LOGE(TAG, "✗ Insufficient memory for SD card operations");
+        this->init_error_ = ErrorCode::ERR_MOUNT;
+        break;
+      case ESP_ERR_INVALID_ARG:
+        ESP_LOGE(TAG, "✗ Invalid configuration parameters");
+        this->init_error_ = ErrorCode::ERR_PIN_SETUP;
+        break;
+      case ESP_ERR_NOT_FOUND:
+      case ESP_ERR_TIMEOUT:
+        ESP_LOGE(TAG, "✗ No SD card detected or card not responding");
+        ESP_LOGE(TAG, "   Check: card insertion, power supply, pin connections");
+        this->init_error_ = ErrorCode::ERR_NO_CARD;
+        break;
+      case ESP_FAIL:
+      default:
+        ESP_LOGE(TAG, "✗ Failed to mount filesystem: %s", esp_err_to_name(mount_ret));
+        this->init_error_ = ErrorCode::ERR_MOUNT;
         break;
     }
-    
-    vTaskDelay(pdMS_TO_TICKS(500 * attempt));
+    mark_failed();
+    return;
   }
 
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "CRITICAL: Failed to mount SD card on GUITION after 3 attempts");
-    ESP_LOGE(TAG, "Check: 1) Power control configuration 2) Card format (FAT32) 3) Pin wiring");
-    ESP_LOGE(TAG, "Configured pins - CLK:%d CMD:%d D0:%d D1:%d D2:%d D3:%d", 
-             this->clk_pin_, this->cmd_pin_, this->data0_pin_, 
-             this->data1_pin_, this->data2_pin_, this->data3_pin_);
-    
-    if (ret == ESP_ERR_TIMEOUT || ret == ESP_ERR_INVALID_RESPONSE) {
-      this->init_error_ = ErrorCode::ERR_NO_CARD;
+  // Optimisation de la fréquence après montage réussi
+  if (this->card_ && this->card_->max_freq_khz > SDMMC_FREQ_PROBING) {
+    uint32_t target_freq = std::min(static_cast<uint32_t>(SDMMC_FREQ_HIGHSPEED), this->card_->max_freq_khz);
+    esp_err_t freq_ret = sdmmc_host_set_card_clk(host.slot, target_freq);
+    if (freq_ret == ESP_OK) {
+      ESP_LOGI(TAG, "Card frequency optimized to %d kHz", target_freq);
     } else {
-      this->init_error_ = ErrorCode::ERR_MOUNT;
+      ESP_LOGW(TAG, "Failed to optimize frequency: %s", esp_err_to_name(freq_ret));
     }
-    mark_failed();
-    return;
   }
 
-  // Validation post-montage
-  if (this->card_ == nullptr) {
-    ESP_LOGE(TAG, "Card pointer null après montage réussi!");
-    this->init_error_ = ErrorCode::ERR_MOUNT;
-    mark_failed();
-    return;
-  }
-
-  // Informations détaillées
-  ESP_LOGI(TAG, "=== GUITION SD Card Successfully Mounted ===");
-  ESP_LOGI(TAG, "Card Name: %s", this->card_->cid.name);
-  ESP_LOGI(TAG, "Card Type: %s", sd_card_type().c_str());
-  ESP_LOGI(TAG, "Frequency: %d kHz (max: %d kHz)", this->card_->real_freq_khz, this->card_->max_freq_khz);
-  ESP_LOGI(TAG, "Capacity: %llu MB", ((uint64_t)this->card_->csd.capacity * this->card_->csd.sector_size) / (1024 * 1024));
-  ESP_LOGI(TAG, "Bus Width: %d-bit", this->mode_1bit_ ? 1 : 4);
-  ESP_LOGI(TAG, "Configured GPIO - CLK:%d CMD:%d D0:%d", this->clk_pin_, this->cmd_pin_, this->data0_pin_);
-  if (!this->mode_1bit_) {
-    ESP_LOGI(TAG, "Data GPIO - D1:%d D2:%d D3:%d", this->data1_pin_, this->data2_pin_, this->data3_pin_);
-  }
-
-  // Test fonctionnel simple
-  ESP_LOGI(TAG, "Running basic functionality test...");
-  const char* test_data = "GUITION ESP32-P4 SD Test - Dynamic GPIO Working!\n";
-  write_file("/guition_test.txt", reinterpret_cast<const uint8_t*>(test_data), strlen(test_data));
+  // Affichage détaillé des informations
+  ESP_LOGI(TAG, "╔════════════════════════════════════════╗");
+  ESP_LOGI(TAG, "║           SD Card Information          ║");
+  ESP_LOGI(TAG, "╠════════════════════════════════════════╣");
+  ESP_LOGI(TAG, "║ Slot:     %-28d ║", this->slot_);
+  ESP_LOGI(TAG, "║ Name:     %-28s ║", this->card_->cid.name);
+  ESP_LOGI(TAG, "║ Type:     %-28s ║", sd_card_type().c_str());
+  ESP_LOGI(TAG, "║ Speed:    %d kHz (max: %d kHz)%*s ║", 
+           this->card_->real_freq_khz, this->card_->max_freq_khz,
+           (int)(28 - snprintf(nullptr, 0, "%d kHz (max: %d kHz)", this->card_->real_freq_khz, this->card_->max_freq_khz)), "");
   
-  if (file_size("/guition_test.txt") > 0) {
-    ESP_LOGI(TAG, "SD write/read test PASSED");
-    delete_file("/guition_test.txt");
-  } else {
-    ESP_LOGW(TAG, "SD write test FAILED - check permissions");
-  }
+  uint64_t card_size = ((uint64_t)this->card_->csd.capacity * this->card_->csd.sector_size);
+  ESP_LOGI(TAG, "║ Size:     %llu MB (%llu bytes)%*s ║", 
+           card_size / (1024 * 1024), card_size,
+           (int)(28 - snprintf(nullptr, 0, "%llu MB (%llu bytes)", card_size / (1024 * 1024), card_size)), "");
+  ESP_LOGI(TAG, "║ Sectors:  %d bytes/sector%*s ║", 
+           this->card_->csd.sector_size,
+           (int)(28 - snprintf(nullptr, 0, "%d bytes/sector", this->card_->csd.sector_size)), "");
+  ESP_LOGI(TAG, "╚════════════════════════════════════════╝");
 
+  // Mise à jour initiale des capteurs
   update_sensors();
-  ESP_LOGI(TAG, "GUITION SD Card initialization complete!");
-}
-
-void SdMmc::write_file(const char *path, const uint8_t *buffer, size_t len) {
-  this->write_file(path, buffer, len, "w");
 }
 
 void SdMmc::write_file(const char *path, const uint8_t *buffer, size_t len, const char *mode) {
-  ESP_LOGV(TAG, "Writing file: %s (mode: %s, size: %zu)", path, mode, len);
+  ESP_LOGV(TAG, "Writing to file: %s (mode: %s, size: %zu bytes)", path, mode, len);
   std::string absolut_path = build_path(path);
   FILE *file = fopen(absolut_path.c_str(), mode);
   if (file == nullptr) {
     ESP_LOGE(TAG, "Failed to open file for writing: %s", strerror(errno));
     return;
   }
-
+  
   size_t written = fwrite(buffer, 1, len, file);
   if (written != len) {
     ESP_LOGE(TAG, "Write incomplete: expected %zu bytes, wrote %zu", len, written);
-  } else {
-    ESP_LOGV(TAG, "Successfully wrote %zu bytes to %s", written, path);
   }
   
-  if (fclose(file) != 0) {
-    ESP_LOGE(TAG, "Failed to close file: %s", strerror(errno));
-  }
+  fclose(file);
   this->update_sensors();
 }
 
+void SdMmc::write_file(const char *path, const uint8_t *buffer, size_t len) {
+  write_file(path, buffer, len, "w");
+}
+
 void SdMmc::append_file(const char *path, const uint8_t *buffer, size_t len) {
-  this->write_file(path, buffer, len, "a");
+  write_file(path, buffer, len, "a");
 }
 
 void SdMmc::write_file_chunked(const char *path, const uint8_t *buffer, size_t len, size_t chunk_size) {
+  ESP_LOGV(TAG, "Writing chunked file: %s (total: %zu bytes, chunk: %zu bytes)", path, len, chunk_size);
   std::string absolut_path = build_path(path);
-  FILE *file = fopen(absolut_path.c_str(), "a");
-  if (file == NULL) {
-    ESP_LOGE(TAG, "Failed to open file for chunked writing");
+  FILE *file = fopen(absolut_path.c_str(), "w");
+  if (file == nullptr) {
+    ESP_LOGE(TAG, "Failed to open file for chunked writing: %s", strerror(errno));
     return;
   }
 
   size_t written = 0;
   while (written < len) {
     size_t to_write = std::min(chunk_size, len - written);
-    bool ok = fwrite(buffer + written, 1, to_write, file);
-    if (!ok) {
-      ESP_LOGE(TAG, "Failed to write chunk to file");
+    size_t chunk_written = fwrite(buffer + written, 1, to_write, file);
+    if (chunk_written != to_write) {
+      ESP_LOGE(TAG, "Chunk write failed at offset %zu", written);
       break;
     }
-    written += to_write;
+    written += chunk_written;
+    
+    // Reset WDT pour les gros fichiers
+    if (written % (64 * 1024) == 0) {
+      esp_task_wdt_reset();
+    }
   }
+  
   fclose(file);
+  ESP_LOGD(TAG, "Chunked write completed: %zu/%zu bytes", written, len);
   this->update_sensors();
 }
 
-#else
-void SdMmc::write_file_chunked(const char *path, const uint8_t *buffer, size_t len, size_t chunk_size) {
-  ESP_LOGV(TAG, "Writing chunked to file: %s", path);
-  size_t written = 0;
-  while (written < len) {
-    size_t to_write = std::min(chunk_size, len - written);
-    this->write_file(path, buffer + written, to_write, "a");
-    written += to_write;
+bool SdMmc::delete_file(const char *path) {
+  ESP_LOGV(TAG, "Deleting file: %s", path);
+  if (this->is_directory(path)) {
+    ESP_LOGE(TAG, "Cannot delete file: path is a directory");
+    return false;
   }
+  std::string absolut_path = build_path(path);
+  if (remove(absolut_path.c_str()) != 0) {
+    ESP_LOGE(TAG, "Failed to delete file: %s", strerror(errno));
+    return false;
+  }
+  this->update_sensors();
+  return true;
 }
 
-void SdMmc::write_file(const char *path, const uint8_t *buffer, size_t len) {
-  ESP_LOGE(TAG, "SD MMC not supported on this platform");
+bool SdMmc::delete_file(std::string const &path) { 
+  return this->delete_file(path.c_str()); 
 }
 
-void SdMmc::write_file(const char *path, const uint8_t *buffer, size_t len, const char *mode) {
-  ESP_LOGE(TAG, "SD MMC not supported on this platform");  
+bool SdMmc::create_directory(const char *path) {
+  ESP_LOGV(TAG, "Creating directory: %s", path);
+  std::string absolut_path = build_path(path);
+  if (mkdir(absolut_path.c_str(), 0777) < 0) {
+    ESP_LOGE(TAG, "Failed to create directory: %s", strerror(errno));
+    return false;
+  }
+  this->update_sensors();
+  return true;
 }
 
-void SdMmc::append_file(const char *path, const uint8_t *buffer, size_t len) {
-  ESP_LOGE(TAG, "SD MMC not supported on this platform");
+bool SdMmc::remove_directory(const char *path) {
+  ESP_LOGV(TAG, "Removing directory: %s", path);
+  if (!this->is_directory(path)) {
+    ESP_LOGE(TAG, "Cannot remove directory: path is not a directory");
+    return false;
+  }
+  std::string absolut_path = build_path(path);
+  if (remove(absolut_path.c_str()) != 0) {
+    ESP_LOGE(TAG, "Failed to remove directory: %s", strerror(errno));
+    return false;
+  }
+  this->update_sensors();
+  return true;
 }
-#endif
+
+std::vector<uint8_t> SdMmc::read_file(const char *path) {
+  ESP_LOGV(TAG, "Reading file: %s", path);
+
+  size_t file_size = this->file_size(path);
+  if (file_size == static_cast<size_t>(-1)) {
+    ESP_LOGE(TAG, "Cannot determine file size");
+    return {};
+  }
+  
+  // Limite de sécurité pour éviter les problèmes de mémoire
+  constexpr size_t MAX_SAFE_SIZE = 2 * 1024 * 1024; // 2MB
+  
+  if (file_size > MAX_SAFE_SIZE) {
+    ESP_LOGE(TAG, "File too large for direct reading: %zu bytes (max: %zu). Use read_file_stream instead.", 
+             file_size, MAX_SAFE_SIZE);
+    return {};
+  }
+
+  std::string absolut_path = build_path(path);
+  FILE *file = fopen(absolut_path.c_str(), "rb");
+  if (file == nullptr) {
+    ESP_LOGE(TAG, "Failed to open file for reading: %s", strerror(errno));
+    return {};
+  }
+
+  std::vector<uint8_t> result(file_size);
+  size_t read_len = fread(result.data(), 1, file_size, file);
+  fclose(file);
+
+  if (read_len != file_size) {
+    ESP_LOGE(TAG, "Read incomplete: expected %zu bytes, got %zu", file_size, read_len);
+    return {};
+  }
+
+  ESP_LOGD(TAG, "Successfully read %zu bytes from %s", read_len, path);
+  return result;
+}
+
+std::vector<uint8_t> SdMmc::read_file(std::string const &path) { 
+  return this->read_file(path.c_str()); 
+}
+
+std::vector<uint8_t> SdMmc::read_file_chunked(const char *path, size_t offset, size_t chunk_size) {
+  ESP_LOGV(TAG, "Reading file chunk: %s (offset: %zu, size: %zu)", path, offset, chunk_size);
+  
+  std::string absolut_path = build_path(path);
+  FILE *file = fopen(absolut_path.c_str(), "rb");
+  if (!file) {
+    ESP_LOGE(TAG, "Failed to open file for chunked reading: %s", strerror(errno));
+    return {};
+  }
+
+  if (fseek(file, offset, SEEK_SET) != 0) {
+    ESP_LOGE(TAG, "Failed to seek to offset %zu: %s", offset, strerror(errno));
+    fclose(file);
+    return {};
+  }
+
+  std::vector<uint8_t> result(chunk_size);
+  size_t read_len = fread(result.data(), 1, chunk_size, file);
+  fclose(file);
+
+  result.resize(read_len); // Ajuster à la taille réellement lue
+  ESP_LOGD(TAG, "Read chunk: %zu bytes at offset %zu", read_len, offset);
+  return result;
+}
+
+std::vector<uint8_t> SdMmc::read_file_chunked(std::string const &path, size_t offset, size_t chunk_size) {
+  return this->read_file_chunked(path.c_str(), offset, chunk_size);
+}
+
+bool SdMmc::is_directory(const char *path) {
+  std::string absolut_path = build_path(path);
+  DIR *dir = opendir(absolut_path.c_str());
+  if (dir) {
+    closedir(dir);
+    return true;
+  }
+  return false;
+}
+
+bool SdMmc::is_directory(std::string const &path) { 
+  return this->is_directory(path.c_str()); 
+}
 
 std::vector<std::string> SdMmc::list_directory(const char *path, uint8_t depth) {
   std::vector<std::string> list;
   std::vector<FileInfo> infos = list_directory_file_info(path, depth);
-  std::transform(infos.cbegin(), infos.cend(), list.begin(), [](FileInfo const &info) { return info.path; });
+  list.reserve(infos.size());
+  std::transform(infos.cbegin(), infos.cend(), std::back_inserter(list), 
+                 [](const FileInfo &info) { return info.path; });
   return list;
 }
 
@@ -396,6 +588,7 @@ bool SdMmc::is_directory(const char *path) {
 size_t SdMmc::file_size(const char *path) {
   std::string absolut_path = build_path(path);
   struct stat info;
+  size_t file_size = 0;
   if (stat(absolut_path.c_str(), &info) < 0) {
     ESP_LOGE(TAG, "Failed to stat file: %s", strerror(errno));
     return -1;
@@ -485,6 +678,7 @@ bool SdMmc::delete_file(const char *path) {
   return true;
 }
 
+// Lecture complète d'un fichier
 std::vector<uint8_t> SdMmc::read_file(const char *path) {
   ESP_LOGV(TAG, "Read File: %s", path);
 
@@ -519,42 +713,9 @@ std::vector<uint8_t> SdMmc::read_file(const char *path) {
   return res;
 }
 
-std::vector<uint8_t> SdMmc::read_file_chunked(const char *path, size_t offset, size_t chunk_size) {
-  ESP_LOGV(TAG, "Reading file chunked: %s (offset: %zu, chunk: %zu)", path, offset, chunk_size);
-  std::string absolut_path = build_path(path);
-  FILE *file = fopen(absolut_path.c_str(), "rb");
-  if (file == nullptr) {
-    ESP_LOGE(TAG, "Failed to open file for reading: %s", strerror(errno));
-    return {};
-  }
 
-  // Aller à la position demandée
-  if (fseek(file, offset, SEEK_SET) != 0) {
-    ESP_LOGE(TAG, "Failed to seek to position %zu: %s", offset, strerror(errno));
-    fclose(file);
-    return {};
-  }
 
-  std::vector<uint8_t> buffer(chunk_size);
-  size_t read_len = fread(buffer.data(), 1, chunk_size, file);
-  
-  if (ferror(file)) {
-    ESP_LOGE(TAG, "Error reading file: %s", strerror(errno));
-    fclose(file);
-    return {};
-  }
-  
-  fclose(file);
-
-  // Ajuster la taille du vecteur si moins de données ont été lues
-  if (read_len < chunk_size) {
-    buffer.resize(read_len);
-  }
-
-  ESP_LOGV(TAG, "Read %zu bytes from %s", read_len, path);
-  return buffer;
-}
-
+// Lecture en streaming par chunks avec reset du WDT
 void SdMmc::read_file_stream(const char *path, size_t offset, size_t chunk_size,
                              std::function<void(const uint8_t*, size_t)> callback) {
   std::string absolut_path = build_path(path);
@@ -590,8 +751,8 @@ void SdMmc::read_file_stream(const char *path, size_t offset, size_t chunk_size,
   }
 }
 
-#endif
 
+#endif
 size_t SdMmc::file_size(std::string const &path) { return this->file_size(path.c_str()); }
 
 bool SdMmc::is_directory(std::string const &path) { return this->is_directory(path.c_str()); }
@@ -648,6 +809,9 @@ FileInfo::FileInfo(std::string const &path, size_t size, bool is_directory)
 
 }  // namespace sd_mmc_card
 }  // namespace esphome
+
+
+
 
 
 
